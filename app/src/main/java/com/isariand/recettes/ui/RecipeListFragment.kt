@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.isariand.recettes.R
 import com.isariand.recettes.ui.detail.RecipeDetailFragment // 👈 Import du Fragment de Détail
 import com.isariand.recettes.viewmodel.MainViewModel
+import androidx.recyclerview.widget.ItemTouchHelper
+
 
 class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
 
@@ -18,6 +20,9 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
     private lateinit var adapter: RecipeAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var emptyTextView: TextView
+
+    private var currentRecipes: List<com.isariand.recettes.data.RecipeEntity> = emptyList()
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -32,11 +37,39 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
         }
         recyclerView.adapter = adapter
 
+        val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            0,
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                if (position == RecyclerView.NO_POSITION) return
+
+                val recipe = currentRecipes.getOrNull(position)
+                if (recipe != null) {
+                    // 👇 ici, le nom du champ dépend de ton Entity
+                    viewModel.deleteRecipe(recipe.id)
+                } else {
+                    // si on ne retrouve pas l’item (rare), on redessine la liste
+                    adapter.notifyItemChanged(position)
+                }
+            }
+        })
+
+        itemTouchHelper.attachToRecyclerView(recyclerView)
+
+
         // 2. Observation des données de Room via le MainViewModel
-        viewModel.savedRecipes.observe(viewLifecycleOwner, Observer { recipes ->
+        viewModel.savedRecipes.observe(viewLifecycleOwner) { recipes ->
+            currentRecipes = recipes
             adapter.submitList(recipes)
 
-            // Affichage conditionnel
             if (recipes.isEmpty()) {
                 recyclerView.visibility = View.GONE
                 emptyTextView.visibility = View.VISIBLE
@@ -44,7 +77,8 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
                 recyclerView.visibility = View.VISIBLE
                 emptyTextView.visibility = View.GONE
             }
-        })
+        }
+
     }
 
     /**

@@ -5,19 +5,26 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class VideoResponse(
-    // code doit être 0 pour que la requête soit un succès
     val code: Int,
     val msg: String,
-    // La donnée principale qui contient les détails de la vidéo
     val data: VideoData?
 )
 
 @JsonClass(generateAdapter = true)
 data class VideoData(
-    // C'est ce champ qui contient la description/recette
-    val title: String?,
+    // Titre renvoyé par TikWM
+    @Json(name = "title")
+    val title: String? = null,
 
-    // Le lien de téléchargement (utile si vous voulez télécharger plus tard)
+    // URL de lecture (souvent présent)
     @Json(name = "play")
-    val videoUrl: String?,
+    val playUrl: String? = null,
+
+    // URL HD / sans watermark (souvent "hdplay" chez TikWM)
+    @Json(name = "hdplay")
+    val noWatermarkUrl: String? = null,
+
+    // URL avec watermark (si tu veux la garder)
+    @Json(name = "wmplay")
+    val watermarkUrl: String? = null
 )

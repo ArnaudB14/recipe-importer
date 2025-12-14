@@ -1,5 +1,6 @@
 package com.isariand.recettes.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.*
 import kotlinx.coroutines.launch
 import com.isariand.recettes.data.VideoData
@@ -34,30 +35,44 @@ class MainViewModel(private val repository: VideoRepository) : ViewModel() {
 
 // Fichier: viewmodel/MainViewModel.kt (CORRIGÉ)
 
+// Fichier: viewmodel/MainViewModel.kt (Mise à jour de saveLastFetchedVideo)
+
     fun saveLastFetchedVideo(originalLink: String) {
-        val data = videoData.value
-        if (data != null) {
-            viewModelScope.launch {
-                try {
-                    // 🛑 CORRECTION : Inverser les arguments 🛑
-                    // Signature attendue : saveRecipe(videoUrl: String, videoData: VideoData)
-                    repository.saveRecipe(originalLink, data) // data est VideoData, originalLink est String
+        viewModelScope.launch {
+            val tikwmData = videoData.value
 
-                    // Note: La fonction saveRecipe ne retourne probablement pas l'ID de la DB
-                    // (elle retourne Unit ou Long/void selon votre DAO).
-                    // Si votre DAO retourne Unit, retirez le "val newId ="
-                    // S'il retourne l'ID (Long), vous pouvez le laisser.
-
-                    // Si saveRecipe retourne Unit:
-                    // repository.saveRecipe(originalLink, data)
-                    _errorMessage.postValue("Recette sauvegardée.")
-
-                } catch (e: Exception) {
-                    _errorMessage.postValue("Erreur de sauvegarde: ${e.message}")
-                }
+            if (tikwmData == null) {
+                _errorMessage.postValue("Aucune donnée vidéo à sauvegarder.")
+                return@launch
             }
-        } else {
-            _errorMessage.postValue("Aucune donnée vidéo à sauvegarder.")
+
+            val text = tikwmData.title
+            if (text.isNullOrBlank()) {
+                _errorMessage.postValue("Aucun texte de recette disponible.")
+                return@launch
+            }
+
+            _errorMessage.postValue("Analyse de la recette en cours...")
+
+            val analysisResult = repository.analyzeTextAndGetRecipe(text)
+
+            analysisResult.onSuccess { geminiRecipe ->
+                // ✅ suspend, donc on reste dans la coroutine (on est toujours dans launch)
+                viewModelScope.launch {
+                    repository.saveRecipe(originalLink, tikwmData, geminiRecipe)
+                    _errorMessage.postValue("Recette analysée et sauvegardée ✅")
+                }
+            }.onFailure { e ->
+                _errorMessage.postValue("Erreur analyse recette : ${e.message}")
+            }
         }
     }
+
+    fun deleteRecipe(recipeId: Long) {
+        viewModelScope.launch {
+            repository.deleteRecipe(recipeId)
+        }
+    }
+
+
 }

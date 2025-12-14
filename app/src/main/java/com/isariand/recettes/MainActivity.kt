@@ -11,8 +11,7 @@ import com.isariand.recettes.network.RetrofitClient
 import com.isariand.recettes.viewmodel.MainViewModel
 import android.content.Intent
 import com.isariand.recettes.data.AppDatabase
-import com.isariand.recettes.ui.RecipeListFragment // 👈 NOUVEL IMPORT CRUCIAL !
-import com.isariand.recettes.data.RecipeDao
+import com.isariand.recettes.ui.RecipeListFragment
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,6 +19,9 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels {
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
+
+                val GEMINI_API_KEY_SECRET = "AIzaSyCU2v3XBpYQK1yPfSZ8zJLf9kTtbfSyIYg"
+
                 // 1. Dépendance API
                 val apiService = RetrofitClient.apiService
 
@@ -27,7 +29,7 @@ class MainActivity : AppCompatActivity() {
                 val recipeDao = AppDatabase.getDatabase(applicationContext).recipeDao()
 
                 // 3. Création du Repository avec les DEUX dépendances
-                val repository = VideoRepository(apiService, recipeDao)
+                val repository = VideoRepository(apiService, recipeDao, geminiApiKey = GEMINI_API_KEY_SECRET)
 
                 @Suppress("UNCHECKED_CAST")
                 return MainViewModel(repository) as T

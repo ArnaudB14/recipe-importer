@@ -16,6 +16,9 @@ import com.isariand.recettes.data.AppDatabase // Pour l'injection manuelle
 import com.squareup.picasso.Picasso
 import java.lang.IllegalArgumentException
 import android.widget.TextView
+import android.content.Intent
+import android.net.Uri
+
 class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
 
     private var _binding: FragmentRecipeDetailBinding? = null
@@ -30,10 +33,12 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
     // 💡 CORRECTION 3 : Initialisation du ViewModel avec injection manuelle
     private val viewModel: RecipeDetailViewModel by viewModels {
 
+        val GEMINI_API_KEY_SECRET = "AIzaSyCU2v3XBpYQK1yPfSZ8zJLf9kTtbfSyIYg"
+
         // 1. Créer les dépendances du Repository
         val apiService = RetrofitClient.apiService
         val recipeDao = AppDatabase.getDatabase(requireContext()).recipeDao()
-        val repository = VideoRepository(apiService, recipeDao) // Votre Repository
+        val repository = VideoRepository(apiService, recipeDao, geminiApiKey = GEMINI_API_KEY_SECRET) // Votre Repository
 
         // 2. Utiliser la Factory et passer les dépendances
         RecipeDetailViewModelFactory(repository, recipeId)
@@ -52,15 +57,29 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
         // Observer les données du ViewModel
         viewModel.recipe.observe(viewLifecycleOwner) { recipe ->
             recipe?.let {
-                // Afficher le titre dans l'EditText
                 binding.recipeTitle.setText(it.customTitle)
+                binding.videoDescription.setText("Description : ${it.description}")
+                binding.ingredientsContent.setText(it.ingredients)
+                binding.instructionsContent.setText(it.instructions)
 
-                binding.videoDescription.text = "Description : ${it.videoTitle}"
-                // ... (Picasso si vous l'avez gardé)
+                // ✅ Bouton "Ouvrir sur TikTok"
+                val tiktokUrl = it.videoUrl
+                if (!tiktokUrl.isNullOrBlank()) {
+                    binding.openTikTokButton.visibility = View.VISIBLE
+                    binding.openTikTokButton.setOnClickListener {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tiktokUrl))
+                        startActivity(intent)
+                    }
+                } else {
+                    binding.openTikTokButton.visibility = View.GONE
+                }
+
             } ?: run {
                 binding.recipeTitle.setText("Recette introuvable")
+                binding.openTikTokButton.visibility = View.GONE
             }
         }
+
 
         binding.recipeTitle.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {

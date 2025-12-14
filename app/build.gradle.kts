@@ -18,6 +18,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
     }
 
     buildTypes {
@@ -29,6 +30,14 @@ android {
             )
         }
     }
+
+    val geminiApiKey = providers.gradleProperty("GEMINI_API_KEY")
+    if (geminiApiKey.isPresent) {
+        buildTypes.all {
+            resValue("string", "gemini_api_key", "\"${geminiApiKey.get()}\"")
+        }
+    }
+
     buildFeatures {
         viewBinding = true
     }
@@ -79,4 +88,7 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("androidx.activity:activity-ktx:1.8.2")
     implementation("com.squareup.picasso:picasso:2.8")
+    implementation("com.google.ai.client.generativeai:generativeai:latest.release")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }

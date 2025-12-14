@@ -10,11 +10,18 @@ data class RecipeEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
 
+    // Titre personnalisé par l'utilisateur
     val customTitle: String,
 
+    // 🛑 Nouveaux champs extraits par Gemini 🛑
+    val recipeTitle: String,         // Titre extrait (pour l'affichage par défaut si customTitle est vide)
+    val description: String,         // Description détaillée (avant les étapes)
+    val ingredients: String,         // Liste formatée (ou JSON si vous le souhaitez, ici String)
+    val instructions: String,        // Étapes formatées (ici String)
+    val cookingTime: String?,        // Temps de cuisson (peut être null)
     val videoTitle: String,
-
+    // Anciens champs
     val dateAdded: Long,
     val videoUrl: String,
-    val noWatermarkUrl: String? = null // Optionnel
+    val noWatermarkUrl: String? = null
 )

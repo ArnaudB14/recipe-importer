@@ -8,7 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 // Version de la base de données. Doit être incrémentée lors d'un changement de schéma.
-@Database(entities = [RecipeEntity::class], version = 2, exportSchema = false)
+@Database(entities = [RecipeEntity::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun recipeDao(): RecipeDao
@@ -28,13 +28,48 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Créer une nouvelle table temporaire avec la nouvelle structure
+                db.execSQL("""
+                    CREATE TABLE recipes_new (
+                        id INTEGER PRIMARY KEY NOT NULL,
+                        customTitle TEXT NOT NULL,
+                        recipeTitle TEXT NOT NULL DEFAULT '',
+                        description TEXT NOT NULL DEFAULT '',
+                        ingredients TEXT NOT NULL DEFAULT '',
+                        instructions TEXT NOT NULL DEFAULT '',
+                        cookingTime TEXT,
+                        dateAdded INTEGER NOT NULL,
+                        videoUrl TEXT NOT NULL,
+                        noWatermarkUrl TEXT,
+                        videoTitle TEXT NOT NULL -- Gardons l'ancienne description TikTok pour l'historique si besoin
+                    )
+                """)
+
+                // Copier les données (customTitle, dateAdded, videoUrl, etc.)
+                db.execSQL("""
+                    INSERT INTO recipes_new (
+                        id, customTitle, dateAdded, videoUrl, noWatermarkUrl, videoTitle
+                    )
+                    SELECT 
+                        id, customTitle, dateAdded, videoUrl, noWatermarkUrl, videoTitle
+                    FROM recipes
+                """)
+
+                // Remplacer l'ancienne table
+                db.execSQL("DROP TABLE recipes")
+                db.execSQL("ALTER TABLE recipes_new RENAME TO recipes")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "recipe_database"
-                ).addMigrations(MIGRATION_1_2).build()
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
                 INSTANCE = instance
                 instance
             }

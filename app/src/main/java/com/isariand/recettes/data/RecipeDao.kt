@@ -22,4 +22,8 @@ interface RecipeDao {
 
     @Query("UPDATE recipes SET customTitle = :newTitle WHERE id = :recipeId")
     suspend fun updateCustomTitle(recipeId: Long, newTitle: String)
+
+    @Query("DELETE FROM recipes WHERE id = :recipeId")
+    suspend fun deleteById(recipeId: Long)
+
 }
