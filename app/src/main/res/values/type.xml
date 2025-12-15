@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="TextSketchHeadline" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:fontFamily">@font/caveat_regular</item>
+        <item name="android:textColor">@color/sk_text</item>
+    </style>
+
+    <style name="TextSketchTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">@font/caveat_regular</item>
+        <item name="android:textColor">@color/sk_text</item>
+    </style>
+
+    <style name="TextSketchBody" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">@font/architects_daughter_regular</item>
+        <item name="android:textColor">@color/sk_text</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+    </style>
+
+</resources>

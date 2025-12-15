@@ -2,4 +2,18 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- Papier -->
+    <color name="sk_paper">#FAF7F0</color>
+    <color name="sk_surface">#FFFFFF</color>
+    <color name="sk_outline">#2B2B2B</color>
+    <color name="sk_outline_soft">#B7B7B7</color>
+
+    <!-- Texte -->
+    <color name="sk_text">#1F2937</color>
+    <color name="sk_text_muted">#6B7280</color>
+    <color name="sk_ink">#2B2B2B</color>
+
+    <!-- Accent “stylo” -->
+    <color name="sk_primary">#1D4ED8</color>     <!-- bleu stylo -->
+    <color name="sk_secondary">#F59E0B</color>   <!-- surligneur -->
 </resources>

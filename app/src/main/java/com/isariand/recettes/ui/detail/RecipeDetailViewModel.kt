@@ -16,12 +16,14 @@ class RecipeDetailViewModel(
 ) : ViewModel() {
 
     private val _recipe = MutableLiveData<RecipeEntity?>()
-    val recipe: LiveData<RecipeEntity?> = _recipe
+    val recipe: LiveData<RecipeEntity> = repository.observeRecipeById(recipeId)
+
 
     private val _isLoading = MutableLiveData(true)
     val isLoading: LiveData<Boolean> = _isLoading
 
-    // ... (pas d'erreur LiveData pour l'instant)
+    private val _allTags = MutableLiveData<List<String>>(emptyList())
+    val allTags: LiveData<List<String>> = _allTags
 
     init {
         loadRecipeDetail()
@@ -56,4 +58,41 @@ class RecipeDetailViewModel(
             // Si vous n'utilisez pas de Flow, vous devrez peut-être recharger manuellement la recette ici.
         }
     }
+
+    fun saveIngredients(text: String) {
+        viewModelScope.launch {
+            repository.updateIngredients(recipeId, text)
+        }
+    }
+
+    fun saveInstructions(text: String) {
+        viewModelScope.launch {
+            repository.updateInstructions(recipeId, text)
+        }
+    }
+
+    fun saveDescription(text: String) {
+        viewModelScope.launch {
+            repository.updateDescription(recipeId, text)
+        }
+    }
+
+    fun saveTags(tags: String) {
+        viewModelScope.launch {
+            repository.saveTags(recipeId, tags)
+        }
+    }
+
+    fun loadAllTags() {
+        viewModelScope.launch {
+            _allTags.value = repository.getAllTags()
+        }
+    }
+
+    fun toggleFavorite() {
+        viewModelScope.launch {
+            repository.toggleFavorite(recipeId)
+        }
+    }
+
 }

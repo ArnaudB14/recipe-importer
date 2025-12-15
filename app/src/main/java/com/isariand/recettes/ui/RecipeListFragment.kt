@@ -2,7 +2,9 @@ package com.isariand.recettes.ui
 
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
@@ -11,6 +13,8 @@ import com.isariand.recettes.R
 import com.isariand.recettes.ui.detail.RecipeDetailFragment // 👈 Import du Fragment de Détail
 import com.isariand.recettes.viewmodel.MainViewModel
 import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.core.widget.addTextChangedListener
+import com.isariand.recettes.databinding.FragmentRecipeListBinding
 
 
 class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
@@ -20,6 +24,8 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
     private lateinit var adapter: RecipeAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var emptyTextView: TextView
+    private var _binding: FragmentRecipeListBinding? = null
+    private val binding get() = _binding!!
 
     private var currentRecipes: List<com.isariand.recettes.data.RecipeEntity> = emptyList()
 
@@ -29,13 +35,15 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
 
         recyclerView = view.findViewById(R.id.recipe_recycler_view)
         emptyTextView = view.findViewById(R.id.empty_list_text)
+        _binding = FragmentRecipeListBinding.bind(view)
 
-        // 1. Initialisation de l'Adapter avec la fonction de navigation
-        adapter = RecipeAdapter { recipeId ->
-            // Appel de la fonction pour lancer le Fragment de Détail
-            navigateToRecipeDetail(recipeId)
-        }
+        adapter = RecipeAdapter(
+            onRecipeClicked = { recipeId -> navigateToRecipeDetail(recipeId) },
+            onFavoriteClicked = { recipeId -> viewModel.toggleFavorite(recipeId) },
+            onTagClicked = { tag -> viewModel.toggleTag(tag) }
+        )
         recyclerView.adapter = adapter
+
 
         val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
             0,
@@ -66,7 +74,7 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
 
 
         // 2. Observation des données de Room via le MainViewModel
-        viewModel.savedRecipes.observe(viewLifecycleOwner) { recipes ->
+        viewModel.visibleRecipes.observe(viewLifecycleOwner) { recipes ->
             currentRecipes = recipes
             adapter.submitList(recipes)
 
@@ -79,11 +87,51 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
             }
         }
 
+        fun renderActiveTagFilters(tags: Set<String>) {
+            binding.activeTagFilters.removeAllViews()
+
+            tags.forEach { tag ->
+                val chip = TextView(requireContext()).apply {
+                    text = "✕ $tag"
+                    textSize = 13f
+                    setTextColor(requireContext().getColor(R.color.sk_text))
+                    background = requireContext().getDrawable(R.drawable.sketch_tag_selected)
+                    setPadding(18, 10, 18, 10)
+                    typeface = ResourcesCompat.getFont(context, R.font.architects_daughter_regular)
+
+                    val lp = ViewGroup.MarginLayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                    lp.setMargins(0, 0, 12, 12)
+                    layoutParams = lp
+
+                    setOnClickListener { viewModel.toggleTag(tag) }
+                }
+                binding.activeTagFilters.addView(chip)
+            }
+        }
+
+        viewModel.selectedTags.observe(viewLifecycleOwner) { tags ->
+            adapter.setSelectedTags(tags)
+            renderActiveTagFilters(tags)
+        }
+
+        binding.searchInput.addTextChangedListener { text ->
+            viewModel.setSearchQuery(text?.toString().orEmpty())
+        }
+
+        binding.favFilterChip.setOnClickListener {
+            viewModel.toggleFavoritesOnly()
+        }
+
+        viewModel.showFavoritesOnly.observe(viewLifecycleOwner) { enabled ->
+            binding.favFilterChip.alpha = if (enabled) 1f else 0.6f
+        }
+
+
     }
 
-    /**
-     * Gère la navigation vers l'écran de détail en passant l'ID de la recette.
-     */
     private fun navigateToRecipeDetail(recipeId: Long) {
         // Création du Fragment de Détail
         val detailFragment = RecipeDetailFragment()
@@ -100,4 +148,10 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
             .addToBackStack(null) // Permet de revenir en arrière
             .commit()
     }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
 }

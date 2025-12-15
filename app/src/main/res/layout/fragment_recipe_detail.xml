@@ -5,214 +5,249 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F6F7FB"
+    android:background="@drawable/bg_paper_tiled"
     android:fillViewport="true"
     tools:context=".ui.detail.RecipeDetailFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="0dp">
 
-        <!-- HEADER CARD -->
-        <androidx.cardview.widget.CardView
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/sketch_border_dashed"
+            android:src="@drawable/ic_back_sketch"
+            android:contentDescription="Retour"
+            android:padding="8dp"
+            android:tint="#111827"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:rotation="-6"
+            android:translationX="4dp"
+            android:translationY="2dp"/>
+        <ImageButton
+            android:id="@+id/favButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/sketch_border_dashed"
+            android:src="@drawable/ic_star_outline"
+            android:contentDescription="Favori"
+            android:padding="8dp"
+            app:tint="@null"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:rotation="5"
+            android:translationX="-4dp"
+            android:translationY="2dp"/>
+
+        <!-- HEADER NOTE -->
+        <LinearLayout
             android:id="@+id/headerCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
+            android:background="@drawable/sketch_border_box"
+            android:padding="14dp"
+            android:orientation="vertical"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:cardBackgroundColor="#FFFFFF">
+            app:layout_constraintTop_toBottomOf="@id/backButton"
+            android:layout_marginTop="60dp"
+            >
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <!-- Titre (éditable) -->
+            <EditText
+                android:id="@+id/recipe_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="16dp">
+                android:background="@null"
+                android:hint="Titre de la recette"
+                android:importantForAutofill="no"
+                android:inputType="textCapSentences"
+                android:textColor="@color/sk_text"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/caveat_regular"
+                android:paddingTop="2dp"
+                android:paddingBottom="4dp"
+                tools:text="Buns poulet curry (Titre personnalisé)" />
 
-                <EditText
-                    android:id="@+id/recipe_title"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:background="@null"
-                    android:hint="Titre de la recette"
-                    android:importantForAutofill="no"
-                    android:inputType="textCapSentences"
-                    android:paddingTop="2dp"
-                    android:paddingBottom="6dp"
-                    android:textColor="#111827"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    tools:text="Buns poulet curry (Titre personnalisé)" />
+            <EditText
+                android:id="@+id/video_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/sketch_border_dashed"
+                android:padding="12dp"
+                android:hint="Description"
+                android:textColor="@color/sk_text"
+                android:textSize="15sp"
+                android:fontFamily="@font/architects_daughter_regular"
+                android:lineSpacingExtra="3dp"
+                android:inputType="textMultiLine|textCapSentences"
+                android:gravity="top"
+                android:minLines="2"
+                android:scrollbars="none"
+                android:overScrollMode="never" />
 
-                <!-- ✅ Description éditable -->
-                <EditText
-                    android:id="@+id/video_description"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="#F3F4F6"
-                    android:padding="12dp"
-                    android:textColor="#111827"
-                    android:hint="Description"
-                    android:textSize="14sp"
-                    android:lineSpacingExtra="2dp"
-                    android:inputType="textMultiLine|textCapSentences"
-                    android:gravity="top"
-                    android:minLines="2"
-                    android:maxLines="6"
-                    android:overScrollMode="ifContentScrolls"
-                    android:scrollbars="vertical"
-                    app:layout_constraintTop_toBottomOf="@id/recipe_title"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    tools:text="Buns poulet curry — macros, ingrédients, etc." />
-
-                <!-- petite ligne de séparation -->
-                <View
-                    android:id="@+id/divider1"
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="12dp"
-                    android:background="#E5E7EB"
-                    app:layout_constraintTop_toBottomOf="@id/video_description"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+            <!-- Actions -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
 
                 <Button
                     android:id="@+id/openTikTokButton"
                     android:layout_width="0dp"
                     android:layout_height="44dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_weight="1"
                     android:text="Ouvrir sur TikTok"
                     android:textAllCaps="false"
                     android:textStyle="bold"
-                    android:backgroundTint="#111827"
-                    android:textColor="#FFFFFF"
-                    app:layout_constraintTop_toBottomOf="@id/divider1"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    tools:ignore="MissingConstraints" />
+                    android:fontFamily="@font/architects_daughter_regular"
+                    android:backgroundTint="@color/sk_text"
+                    android:textColor="@color/sk_paper"
+                    tools:ignore="MissingConstraints"/>
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
+            </LinearLayout>
+        </LinearLayout>
 
-        <!-- INGREDIENTS CARD -->
-        <androidx.cardview.widget.CardView
+        <!-- INGREDIENTS NOTE -->
+        <LinearLayout
             android:id="@+id/ingredientsCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
+            android:background="@drawable/sketch_border_box"
+            android:padding="14dp"
+            android:orientation="vertical"
             app:layout_constraintTop_toBottomOf="@id/headerCard"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:cardBackgroundColor="#FFFFFF">
+            app:layout_constraintEnd_toEndOf="parent">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <TextView
+                android:id="@+id/ingredients_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="16dp">
+                android:text="Ingrédients"
+                android:textColor="@color/sk_text"
+                android:textStyle="bold"
+                android:textSize="22sp"
+                android:fontFamily="@font/caveat_regular"/>
 
-                <TextView
-                    android:id="@+id/ingredients_title"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Ingrédients"
-                    android:textColor="#111827"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+            <EditText
+                android:id="@+id/ingredientsContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/sketch_border_dashed"
+                android:padding="12dp"
+                android:hint="Liste des ingrédients"
+                android:textColor="@color/sk_text"
+                android:textSize="15sp"
+                android:fontFamily="@font/architects_daughter_regular"
+                android:lineSpacingExtra="3dp"
+                android:inputType="textMultiLine|textCapSentences"
+                android:gravity="top"
+                android:minLines="6"
+                android:maxLines="16"
+                android:overScrollMode="ifContentScrolls"
+                android:scrollbars="vertical"
+                tools:text="- Cheddar : 25g\n- Farine : 60g\n- Skyr : 60g\n- Levure : 2,5g\n- Poulet : 75g\n- Curry\n- Crème 4% : 25g"/>
+        </LinearLayout>
 
-                <!-- ✅ Ingrédients éditables -->
-                <EditText
-                    android:id="@+id/ingredientsContent"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="#F3F4F6"
-                    android:padding="12dp"
-                    android:textColor="#111827"
-                    android:hint="Liste des ingrédients"
-                    android:textSize="14sp"
-                    android:lineSpacingExtra="3dp"
-                    android:inputType="textMultiLine|textCapSentences"
-                    android:gravity="top"
-                    android:minLines="6"
-                    android:maxLines="12"
-                    android:overScrollMode="ifContentScrolls"
-                    android:scrollbars="vertical"
-                    app:layout_constraintTop_toBottomOf="@id/ingredients_title"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    tools:text="- Cheddar : 25g\n- Farine : 60g\n- Skyr : 60g\n- Levure : 2,5g\n- Poulet : 75g\n- Curry\n- Crème 4% : 25g" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- INSTRUCTIONS CARD -->
-        <androidx.cardview.widget.CardView
+        <!-- INSTRUCTIONS NOTE -->
+        <LinearLayout
             android:id="@+id/instructionsCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:layout_marginBottom="24dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
+            android:background="@drawable/sketch_border_box"
+            android:padding="14dp"
+            android:orientation="vertical"
             app:layout_constraintTop_toBottomOf="@id/ingredientsCard"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:cardBackgroundColor="#FFFFFF">
+            app:layout_constraintEnd_toEndOf="parent">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <TextView
+                android:id="@+id/instructions_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="16dp">
+                android:text="Instructions"
+                android:textColor="@color/sk_text"
+                android:textStyle="bold"
+                android:textSize="22sp"
+                android:fontFamily="@font/caveat_regular"/>
 
-                <TextView
-                    android:id="@+id/instructions_title"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Instructions"
-                    android:textColor="#111827"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+            <EditText
+                android:id="@+id/instructionsContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/sketch_border_dashed"
+                android:padding="12dp"
+                android:hint="Étapes de préparation"
+                android:textColor="@color/sk_text"
+                android:textSize="15sp"
+                android:fontFamily="@font/architects_daughter_regular"
+                android:lineSpacingExtra="3dp"
+                android:inputType="textMultiLine|textCapSentences"
+                android:gravity="top"
+                android:minLines="8"
+                android:maxLines="22"
+                android:overScrollMode="ifContentScrolls"
+                android:scrollbars="vertical"
+                tools:text="1. Mélanger farine, skyr et levure.\n2. Former le bun et cuire.\n3. Préparer le poulet curry.\n4. Garnir et servir."/>
+        </LinearLayout>
 
-                <!-- ✅ Instructions éditables -->
-                <EditText
-                    android:id="@+id/instructionsContent"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="#F3F4F6"
-                    android:padding="12dp"
-                    android:textColor="#111827"
-                    android:hint="Étapes de préparation"
-                    android:textSize="14sp"
-                    android:lineSpacingExtra="3dp"
-                    android:inputType="textMultiLine|textCapSentences"
-                    android:gravity="top"
-                    android:minLines="8"
-                    android:maxLines="16"
-                    android:overScrollMode="ifContentScrolls"
-                    android:scrollbars="vertical"
-                    app:layout_constraintTop_toBottomOf="@id/instructions_title"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    tools:text="1. Mélanger farine, skyr et levure.\n2. Former le bun et cuire.\n3. Préparer le poulet curry.\n4. Garnir et servir." />
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/tagsContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:padding="10dp"
+            android:background="@drawable/sketch_border_dashed"
+            app:flexWrap="wrap"
+            app:justifyContent="flex_start"
+            app:alignItems="center"
+            app:layout_constraintTop_toBottomOf="@id/instructionsCard"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
+
+        <EditText
+            android:id="@+id/tagsInput"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/sketch_border_dashed"
+            android:hint="Ajouter des tags (séparés par des virgules)"
+            android:textColor="@color/sk_text"
+            android:textColorHint="@color/sk_text_muted"
+            android:textSize="14sp"
+            android:fontFamily="@font/architects_daughter_regular"
+            android:padding="12dp"
+            app:layout_constraintTop_toBottomOf="@id/tagsContainer"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/tagSuggestionsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:flexWrap="wrap"
+            app:justifyContent="flex_start"
+            app:layout_constraintTop_toBottomOf="@id/tagsInput"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

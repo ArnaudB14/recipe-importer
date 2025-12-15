@@ -7,8 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-// Version de la base de données. Doit être incrémentée lors d'un changement de schéma.
-@Database(entities = [RecipeEntity::class], version = 3, exportSchema = false)
+@Database(entities = [RecipeEntity::class], version = 5, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun recipeDao(): RecipeDao
@@ -19,18 +18,14 @@ abstract class AppDatabase : RoomDatabase() {
 
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // 1. Renommer l'ancienne colonne 'title' en 'videoTitle'
                 db.execSQL("ALTER TABLE recipes RENAME COLUMN title TO videoTitle")
-                // 2. Ajouter la nouvelle colonne 'customTitle'
                 db.execSQL("ALTER TABLE recipes ADD COLUMN customTitle TEXT NOT NULL DEFAULT ''")
-                // 3. Mettre à jour 'customTitle' pour prendre la valeur de l'ancien titre
                 db.execSQL("UPDATE recipes SET customTitle = videoTitle")
             }
         }
 
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Créer une nouvelle table temporaire avec la nouvelle structure
                 db.execSQL("""
                     CREATE TABLE recipes_new (
                         id INTEGER PRIMARY KEY NOT NULL,
@@ -47,7 +42,6 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 """)
 
-                // Copier les données (customTitle, dateAdded, videoUrl, etc.)
                 db.execSQL("""
                     INSERT INTO recipes_new (
                         id, customTitle, dateAdded, videoUrl, noWatermarkUrl, videoTitle
@@ -57,9 +51,25 @@ abstract class AppDatabase : RoomDatabase() {
                     FROM recipes
                 """)
 
-                // Remplacer l'ancienne table
                 db.execSQL("DROP TABLE recipes")
                 db.execSQL("ALTER TABLE recipes_new RENAME TO recipes")
+            }
+        }
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+            ALTER TABLE recipes
+            ADD COLUMN tags TEXT NOT NULL DEFAULT ''
+            """.trimIndent()
+                )
+            }
+        }
+
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE recipes ADD COLUMN isFavorite INTEGER NOT NULL DEFAULT 0")
             }
         }
 
@@ -69,7 +79,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "recipe_database"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build()
                 INSTANCE = instance
                 instance
             }

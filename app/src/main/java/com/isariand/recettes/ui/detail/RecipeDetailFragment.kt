@@ -8,16 +8,18 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.isariand.recettes.R
-import com.isariand.recettes.data.RecipeEntity // 💡 Correction: Utiliser RecipeEntity
-import com.isariand.recettes.databinding.FragmentRecipeDetailBinding // Assurez-vous d'avoir activé viewBinding
-import com.isariand.recettes.repository.VideoRepository // 💡 Correction: Utiliser VideoRepository
-import com.isariand.recettes.network.RetrofitClient // Pour l'injection manuelle
-import com.isariand.recettes.data.AppDatabase // Pour l'injection manuelle
-import com.squareup.picasso.Picasso
+import com.isariand.recettes.databinding.FragmentRecipeDetailBinding
+import com.isariand.recettes.repository.VideoRepository
+import com.isariand.recettes.network.RetrofitClient
+import com.isariand.recettes.data.AppDatabase
 import java.lang.IllegalArgumentException
 import android.widget.TextView
 import android.content.Intent
 import android.net.Uri
+import android.view.ViewGroup
+import androidx.core.content.res.ResourcesCompat
+import com.google.android.flexbox.FlexboxLayout
+import androidx.core.widget.addTextChangedListener
 
 class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
 
@@ -25,29 +27,62 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
     private val binding get() = _binding!!
     private lateinit var customTitleTextView: TextView
     private lateinit var videoTitleTextView: TextView
-    // 💡 CORRECTION 1 : L'ID est un Long (clé primaire de Room)
     private val recipeId: Long by lazy {
         arguments?.getLong("recipeId") ?: 0L
     }
 
-    // 💡 CORRECTION 3 : Initialisation du ViewModel avec injection manuelle
     private val viewModel: RecipeDetailViewModel by viewModels {
 
         val GEMINI_API_KEY_SECRET = "AIzaSyCU2v3XBpYQK1yPfSZ8zJLf9kTtbfSyIYg"
-
-        // 1. Créer les dépendances du Repository
         val apiService = RetrofitClient.apiService
         val recipeDao = AppDatabase.getDatabase(requireContext()).recipeDao()
         val repository = VideoRepository(apiService, recipeDao, geminiApiKey = GEMINI_API_KEY_SECRET) // Votre Repository
-
-        // 2. Utiliser la Factory et passer les dépendances
         RecipeDetailViewModelFactory(repository, recipeId)
+    }
+
+    private fun renderTags(tagsRaw: String) {
+        val container = binding.tagsContainer
+        container.removeAllViews()
+
+        val tags = tagsRaw.split(",")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        tags.forEach { tag ->
+            val chip = TextView(requireContext()).apply {
+                text = "$tag  ×"
+                textSize = 14f
+                setTextColor(requireContext().getColor(R.color.sk_text))
+                background = requireContext().getDrawable(R.drawable.sketch_tag)
+                typeface = ResourcesCompat.getFont(requireContext(), R.font.architects_daughter_regular)
+
+                setPadding(18, 10, 18, 10)
+
+                // marges entre chips
+                layoutParams = FlexboxLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, 0, 12, 12)
+                }
+
+                setOnClickListener {
+                    val newTags = tags.filter { it != tag }.joinToString(", ")
+                    // 1) update UI
+                    binding.tagsInput.setText(newTags)
+                    renderTags(newTags)
+                    // 2) persist
+                    viewModel.saveTags(newTags)
+                }
+            }
+
+            container.addView(chip)
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentRecipeDetailBinding.bind(view)
-        // Gérer l'erreur si l'ID n'a pas été passé
         if (recipeId == 0L) {
             Toast.makeText(context, "Erreur: ID de recette manquant.", Toast.LENGTH_LONG).show()
             parentFragmentManager.popBackStack()
@@ -58,11 +93,16 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
         viewModel.recipe.observe(viewLifecycleOwner) { recipe ->
             recipe?.let {
                 binding.recipeTitle.setText(it.customTitle)
-                binding.videoDescription.setText("Description : ${it.description}")
+                binding.videoDescription.setText(it.description)
                 binding.ingredientsContent.setText(it.ingredients)
                 binding.instructionsContent.setText(it.instructions)
+                binding.tagsInput.setText(it.tags ?: "")
 
-                // ✅ Bouton "Ouvrir sur TikTok"
+                val icon = if (it.isFavorite) R.drawable.ic_star_filled else R.drawable.ic_star_outline
+                binding.favButton.setImageResource(icon)
+
+                renderTags(it.tags ?: "")
+
                 val tiktokUrl = it.videoUrl
                 if (!tiktokUrl.isNullOrBlank()) {
                     binding.openTikTokButton.visibility = View.VISIBLE
@@ -80,33 +120,136 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
             }
         }
 
+        binding.favButton.setOnClickListener {
+            viewModel.toggleFavorite()
+        }
+
+        binding.backButton.setOnClickListener {
+            parentFragmentManager.popBackStack()
+        }
+
 
         binding.recipeTitle.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
-                // L'utilisateur vient de perdre le focus (a fini d'éditer)
                 val newTitle = binding.recipeTitle.text.toString().trim()
                 val currentRecipe = viewModel.recipe.value
-
-                // Sauvegarder uniquement si le nouveau titre est différent de l'ancien
                 if (currentRecipe != null && newTitle != currentRecipe.customTitle) {
                     if (newTitle.isNotBlank()) {
                         viewModel.saveCustomTitle(newTitle)
                     } else {
-                        // Si le titre est vide, on peut le remettre au titre original TikTok ou laisser l'utilisateur
-                        // gérer cela. Ici, on utilise la description comme titre par défaut.
                         viewModel.saveCustomTitle(currentRecipe.videoTitle)
                         Toast.makeText(context, "Titre personnalisé effacé, retour au titre vidéo.", Toast.LENGTH_SHORT).show()
                     }
 
-                    // Mettre à jour visuellement pour confirmer la sauvegarde
                     Toast.makeText(context, "Titre mis à jour : $newTitle", Toast.LENGTH_SHORT).show()
                 }
             }
         }
 
-        // Observer l'état de chargement
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            // Ajoutez ici la logique pour un ProgressBar (si vous en avez un)
+        binding.ingredientsContent.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                val text = binding.ingredientsContent.text.toString()
+                viewModel.saveIngredients(text)
+            }
+        }
+
+        binding.instructionsContent.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                val text = binding.instructionsContent.text.toString()
+                viewModel.saveInstructions(text)
+            }
+        }
+
+        binding.videoDescription.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                val text = binding.videoDescription.text.toString()
+                viewModel.saveDescription(text)
+            }
+        }
+
+        binding.tagsInput.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                val tagsText = binding.tagsInput.text.toString()
+                renderTags(tagsText)
+                viewModel.saveTags(tagsText)
+            }
+        }
+
+        viewModel.loadAllTags()
+
+        binding.tagsInput.addTextChangedListener { text ->
+            val q = text?.toString().orEmpty().trim()
+            renderTagSuggestions(q)
+        }
+
+        viewModel.allTags.observe(viewLifecycleOwner) {
+            renderTagSuggestions(binding.tagsInput.text.toString().trim())
+        }
+
+    }
+
+    private fun renderTagSuggestions(query: String) {
+        val all = viewModel.allTags.value.orEmpty()
+
+        // Tags déjà présents dans l'input
+        val current = binding.tagsInput.text.toString()
+            .split(",")
+            .map { it.trim().lowercase() }
+            .filter { it.isNotBlank() }
+            .toSet()
+
+        val filtered = if (query.isBlank()) {
+            all
+        } else {
+            // On suggère en fonction du "dernier morceau" tapé après la dernière virgule
+            val lastToken = query.substringAfterLast(",").trim().lowercase()
+            if (lastToken.isBlank()) all
+            else all.filter { it.lowercase().contains(lastToken) }
+        }
+            .filter { it.lowercase() !in current }
+            .take(12)
+
+        binding.tagSuggestionsContainer.removeAllViews()
+        filtered.forEach { tag ->
+            binding.tagSuggestionsContainer.addView(makeTagChip(tag) {
+                addTagToInput(tag)
+                renderTagSuggestions(binding.tagsInput.text.toString())
+            })
+        }
+    }
+
+    private fun addTagToInput(tag: String) {
+        val existing = binding.tagsInput.text.toString()
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .toMutableList()
+
+        if (existing.any { it.equals(tag, ignoreCase = true) }) return
+
+        existing.add(tag)
+        binding.tagsInput.setText(existing.joinToString(", "))
+        binding.tagsInput.setSelection(binding.tagsInput.text.length)
+    }
+
+    private fun makeTagChip(tag: String, onClick: () -> Unit): TextView {
+        return TextView(requireContext()).apply {
+            text = tag
+            textSize = 14f
+            setTextColor(resources.getColor(R.color.sk_text, null))
+            background = resources.getDrawable(R.drawable.sketch_tag, null)
+            setPadding(18, 10, 18, 10)
+            typeface = ResourcesCompat.getFont(context, R.font.architects_daughter_regular)
+
+            // marge entre tags
+            layoutParams = ViewGroup.MarginLayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 12, 12)
+            }
+
+            setOnClickListener { onClick() }
         }
     }
 

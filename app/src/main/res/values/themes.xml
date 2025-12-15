@@ -1,9 +1,49 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+
     <style name="Base.Theme.RecettesTikTok" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+        <!-- Couleurs Material 3 -->
+        <item name="colorPrimary">@color/sk_primary</item>
+        <item name="colorOnPrimary">@color/sk_surface</item>
+
+        <item name="colorSecondary">@color/sk_secondary</item>
+        <item name="colorOnSecondary">@color/sk_outline</item>
+
+        <item name="colorSurface">@color/sk_surface</item>
+        <item name="colorOnSurface">@color/sk_text</item>
+
+        <item name="colorSurfaceContainer">@color/sk_paper</item>
+        <item name="colorOnBackground">@color/sk_text</item>
+
+        <item name="colorOutline">@color/sk_outline_soft</item>
+
+        <!-- Désactive le “dynamic color” si tu veux garder ton identité -->
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
+
+        <!-- Typographies (on va les définir juste après) -->
+        <item name="textAppearanceHeadlineLarge">@style/TextSketchHeadline</item>
+        <item name="textAppearanceTitleLarge">@style/TextSketchTitle</item>
+        <item name="textAppearanceBodyLarge">@style/TextSketchBody</item>
+        <item name="textAppearanceBodyMedium">@style/TextSketchBody</item>
+
+        <item name="android:windowBackground">@drawable/old_mathematics</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
     </style>
 
-    <style name="Theme.RecettesTikTok" parent="Base.Theme.RecettesTikTok" />
+    <style name="Theme.RecettesTikTok" parent="Base.Theme.RecettesTikTok">
+        <item name="android:windowBackground">@drawable/bg_paper_tiled</item>
+    </style>
+
+
+    <style name="Theme.RecettesTikTok.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/sk_paper</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo_sketch_inset</item>
+        <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@drawable/bg_paper_tiled</item>
+        <item name="postSplashScreenTheme">@style/Theme.RecettesTikTok</item>
+    </style>
+
+
 </resources>

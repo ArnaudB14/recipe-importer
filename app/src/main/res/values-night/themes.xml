@@ -1,7 +1,23 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+<resources>
+
     <style name="Base.Theme.RecettesTikTok" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Variante nuit “papier sombre” mais lisible -->
+        <item name="colorPrimary">#93C5FD</item>
+        <item name="colorOnPrimary">#0B1220</item>
+
+        <item name="colorSurface">#0B1220</item>
+        <item name="colorOnSurface">#E5E7EB</item>
+
+        <item name="colorSurfaceContainer">#0F172A</item>
+        <item name="colorOnBackground">#E5E7EB</item>
+
+        <item name="colorOutline">#334155</item>
+
+        <item name="textAppearanceHeadlineLarge">@style/TextSketchHeadline</item>
+        <item name="textAppearanceTitleLarge">@style/TextSketchTitle</item>
+        <item name="textAppearanceBodyLarge">@style/TextSketchBody</item>
+        <item name="textAppearanceBodyMedium">@style/TextSketchBody</item>
     </style>
+
+    <style name="Theme.RecettesTikTok" parent="Base.Theme.RecettesTikTok" />
 </resources>

@@ -12,8 +12,15 @@ import com.isariand.recettes.viewmodel.MainViewModel
 import android.content.Intent
 import com.isariand.recettes.data.AppDatabase
 import com.isariand.recettes.ui.RecipeListFragment
+import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.fragment.app.FragmentActivity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : FragmentActivity() {
 
     // 1. Initialisation du ViewModel (avec la Factory pour injecter le Repository et le DAO)
     private val viewModel: MainViewModel by viewModels {
@@ -38,10 +45,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
-        // Utilisation du layout activity_main.xml qui contient SEULEMENT le FrameLayout conteneur
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        WindowInsetsControllerCompat(window, window.decorView)
+            .isAppearanceLightStatusBars = true // texte/icons en noir
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+
         setContentView(R.layout.activity_main)
 
+        val content = findViewById<android.view.View>(R.id.fragment_container)
+
+        ViewCompat.setOnApplyWindowInsetsListener(content) { v, insets ->
+            val sysBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+
+            v.setPadding(
+                v.paddingLeft,
+                sysBars.top,
+                v.paddingRight,
+                maxOf(sysBars.bottom, ime.bottom)
+            )
+            insets
+        }
         viewModel.javaClass
 
         val intentAction = intent.action

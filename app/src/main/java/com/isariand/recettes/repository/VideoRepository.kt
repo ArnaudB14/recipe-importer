@@ -87,6 +87,9 @@ Ta tâche :
 - Réponds UNIQUEMENT avec un JSON valide
 - AUCUN texte hors JSON
 - Si une info est absente, mets une chaîne vide ""
+- Si il n'y a pas d'instructions, invente les en te basant sur le titre de la recette et les ingrédients.
+- Si c'est en anglais, traduis le en français.
+- Estime les calories ainsi que les macros de chaque recettes et ajoute les dans la description sous forme de liste.
 
 FORMAT JSON OBLIGATOIRE :
 {
@@ -168,5 +171,48 @@ FORMAT JSON OBLIGATOIRE :
     suspend fun deleteRecipe(recipeId: Long) {
         recipeDao.deleteById(recipeId)
     }
+
+    suspend fun updateIngredients(recipeId: Long, value: String) {
+        recipeDao.updateIngredients(recipeId, value)
+    }
+
+    suspend fun updateInstructions(recipeId: Long, value: String) {
+        recipeDao.updateInstructions(recipeId, value)
+    }
+
+    suspend fun updateDescription(recipeId: Long, value: String) {
+        recipeDao.updateDescription(recipeId, value)
+    }
+
+    fun searchRecipes(query: String): Flow<List<RecipeEntity>> {
+        return recipeDao.searchRecipes(query)
+    }
+
+    suspend fun updateTags(recipeId: Long, tags: String) {
+        recipeDao.updateTags(recipeId, tags)
+    }
+
+    suspend fun saveTags(recipeId: Long, tags: String) {
+        recipeDao.updateTags(recipeId, tags)
+    }
+
+    suspend fun getAllTags(): List<String> {
+        return recipeDao.getAllTagsStrings()
+            .flatMap { it.split(",") }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+            .sortedBy { it.lowercase() }
+    }
+
+    suspend fun setFavorite(recipeId: Long, isFav: Boolean) {
+        recipeDao.setFavorite(recipeId, isFav)
+    }
+
+    suspend fun toggleFavorite(id: Long) {
+        recipeDao.toggleFavorite(id)
+    }
+
+    fun observeRecipeById(id: Long) = recipeDao.observeRecipeById(id)
 
 }
