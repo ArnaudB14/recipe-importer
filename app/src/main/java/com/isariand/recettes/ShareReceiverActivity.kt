@@ -5,16 +5,16 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 
 class ShareReceiverActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // On redirige vers MainActivity en réutilisant l'instance si elle existe
         val forward = Intent(this, MainActivity::class.java).apply {
             action = intent.action
             type = intent.type
             putExtras(intent)
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            // FLAG_ACTIVITY_NEW_TASK est important ici car on vient d'un contexte externe (TikTok)
+            // REORDER_TO_FRONT ramène l'instance existante au premier plan
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
         }
 
         startActivity(forward)

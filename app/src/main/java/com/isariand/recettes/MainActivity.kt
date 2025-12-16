@@ -119,13 +119,13 @@ class MainActivity : FragmentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        setIntent(intent)
+        setIntent(intent) // TRÈS IMPORTANT : met à jour l'intent de l'activité
 
-        if (intent.action == Intent.ACTION_SEND && intent.type == "text/plain") {
-            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
-            // traite sharedText ici (ex: remplir champ import)
+        val intentAction = intent.action
+        val intentType = intent.type
+
+        if (intentAction == Intent.ACTION_SEND && intentType == "text/plain") {
+            handleSharedIntent(intent)
         }
     }
-
-
 }
