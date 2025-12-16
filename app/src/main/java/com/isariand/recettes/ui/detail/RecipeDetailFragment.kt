@@ -24,6 +24,8 @@ import com.isariand.recettes.network.RetrofitClient
 import com.isariand.recettes.repository.VideoRepository
 import java.lang.IllegalArgumentException
 import com.isariand.recettes.BuildConfig
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
 
 class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
 
@@ -38,6 +40,10 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
         val repository = VideoRepository(apiService, recipeDao, geminiApiKey = BuildConfig.GEMINI_API_KEY)
         RecipeDetailViewModelFactory(repository, recipeId)
     }
+
+    private var player: ExoPlayer? = null
+    private var isMuted = false
+    private var currentVideoUrl: String? = null
 
     private fun Int.dp(): Int =
         (this * requireContext().resources.displayMetrics.density).toInt()
@@ -287,6 +293,19 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
                 val icon = if (it.isFavorite) R.drawable.ic_star_filled else R.drawable.ic_star_outline
                 binding.favButton.setImageResource(icon)
 
+                val mp4Url = it.noWatermarkUrl?.takeIf { u -> u.isNotBlank() }
+
+                if (mp4Url != null) {
+                    binding.videoPlayer.visibility = View.VISIBLE
+                    binding.videoControls.visibility = View.VISIBLE
+                    setupInlinePlayer(mp4Url)
+                } else {
+                    // Pas d’URL mp4 => on cache le player (ou on garde juste le bouton TikTok)
+                    binding.videoPlayer.visibility = View.GONE
+                    binding.videoControls.visibility = View.GONE
+                }
+
+
                 val tiktokUrl = it.videoUrl
                 if (!tiktokUrl.isNullOrBlank()) {
                     binding.openTikTokButton.visibility = View.VISIBLE
@@ -431,11 +450,71 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
         }
     }
 
+    private fun setupInlinePlayer(url: String) {
+        currentVideoUrl = url
+        val ctx = requireContext()
+
+        // init player une seule fois
+        if (player == null) {
+            player = ExoPlayer.Builder(ctx).build().also { exo ->
+                binding.videoPlayer.player = exo
+                exo.volume = 1f // ✅ pas mute par défaut
+                exo.playWhenReady = false // ✅ en pause par défaut
+            }
+        }
+
+        val exo = player ?: return
+        exo.setMediaItem(MediaItem.fromUri(url))
+        exo.prepare()
+
+        binding.videoPlayPause.setOnClickListener {
+            val p = player ?: return@setOnClickListener
+            if (p.isPlaying) {
+                p.pause()
+                binding.videoPlayPause.setImageResource(R.drawable.ic_sketch_play)
+            } else {
+                p.play()
+                binding.videoPlayPause.setImageResource(R.drawable.ic_sketch_pause)
+            }
+        }
+
+        binding.videoMute.setOnClickListener {
+            val p = player ?: return@setOnClickListener
+            isMuted = !isMuted
+            p.volume = if (isMuted) 0f else 1f
+            binding.videoMute.setImageResource(
+                if (isMuted) R.drawable.ic_sketch_sound_off
+                else R.drawable.ic_sketch_sound_on
+            )
+        }
+
+        binding.videoFullscreen.setOnClickListener {
+            val u = currentVideoUrl ?: return@setOnClickListener
+            openFullscreenPlayer(u, isMuted, player?.currentPosition ?: 0L, player?.isPlaying == true)
+        }
+    }
+
+    private fun openFullscreenPlayer(url: String, muted: Boolean, positionMs: Long, wasPlaying: Boolean) {
+        // simple : on pause l’inline
+        player?.pause()
+        binding.videoPlayPause.setImageResource(R.drawable.ic_sketch_play)
+
+        FullscreenPlayerDialog.newInstance(url, muted, positionMs, wasPlaying)
+            .show(parentFragmentManager, "fullscreen_player")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        player?.pause()
+    }
 
     override fun onDestroyView() {
+        player?.release()
+        player = null
         super.onDestroyView()
         _binding = null
     }
+
 }
 
 private fun makeMetaBadge(ctx: android.content.Context, text: String): TextView {

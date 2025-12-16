@@ -36,6 +36,13 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (!isTaskRoot
+            && intent?.action == Intent.ACTION_MAIN
+            && intent?.hasCategory(Intent.CATEGORY_LAUNCHER) == true
+        ) {
+            finish()
+            return
+        }
         installSplashScreen()
         super.onCreate(savedInstanceState)
         window.statusBarColor = android.graphics.Color.TRANSPARENT
@@ -109,4 +116,16 @@ class MainActivity : FragmentActivity() {
             .replace(R.id.fragment_container, RecipeListFragment())
             .commit()
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+
+        if (intent.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
+            // traite sharedText ici (ex: remplir champ import)
+        }
+    }
+
+
 }

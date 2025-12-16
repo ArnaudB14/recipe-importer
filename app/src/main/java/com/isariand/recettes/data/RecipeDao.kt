@@ -75,4 +75,7 @@ interface RecipeDao {
     @Query("SELECT * FROM recipes WHERE id = :id LIMIT 1")
     fun observeRecipeById(id: Long): LiveData<RecipeEntity>
 
+    @Query("SELECT COUNT(*) FROM recipes WHERE videoUrl = :url LIMIT 1")
+    suspend fun countByVideoUrl(url: String): Int
+
 }

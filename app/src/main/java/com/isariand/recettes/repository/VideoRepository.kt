@@ -37,6 +37,7 @@ class VideoRepository(
         }
     }
 
+
     suspend fun analyzeTextAndGetRecipe(recipeText: String): Result<GeminiRecipe> {
         val tag = "GeminiText"
 
@@ -132,6 +133,10 @@ FORMAT JSON OBLIGATOIRE :
         videoData: VideoData,
         geminiRecipe: GeminiRecipe
     ) {
+        if (recipeDao.countByVideoUrl(videoUrl) > 0) {
+            return // déjà importée => pas d'appel Gemini
+        }
+
         val kcal = geminiRecipe.macros?.kcal.orEmpty()
         val protein = geminiRecipe.macros?.p.orEmpty()
         val carbs = geminiRecipe.macros?.g.orEmpty()
@@ -143,6 +148,13 @@ FORMAT JSON OBLIGATOIRE :
             carbs.takeIf { it.isNotBlank() }?.let { "G ${it}g" },
             fat.takeIf { it.isNotBlank() }?.let { "L ${it}g" }
         ).joinToString(" • ")
+
+        val mp4Url = when {
+            !videoData.noWatermarkUrl.isNullOrBlank() -> videoData.noWatermarkUrl
+            !videoData.playUrl.isNullOrBlank() -> videoData.playUrl
+            !videoData.watermarkUrl.isNullOrBlank() -> videoData.watermarkUrl
+            else -> null
+        }
 
         val recipeEntity = RecipeEntity(
             id = 0,
@@ -161,7 +173,7 @@ FORMAT JSON OBLIGATOIRE :
             portions = geminiRecipe.portions.trim(),
             dateAdded = System.currentTimeMillis(),
             videoUrl = videoUrl,
-            noWatermarkUrl = videoData.noWatermarkUrl
+            noWatermarkUrl = mp4Url,
         )
         recipeDao.insert(recipeEntity)
     }

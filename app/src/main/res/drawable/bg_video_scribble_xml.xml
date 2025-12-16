@@ -1,0 +1,100 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Base sombre -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#0E0E10"/>
+            <corners android:radius="14dp"/>
+        </shape>
+    </item>
+
+    <!-- RATURES : on empile plusieurs "capsules" noires/grises -->
+    <!-- Gauche -->
+    <item android:left="18dp" android:top="24dp">
+        <shape android:shape="rectangle">
+            <size android:width="70dp" android:height="14dp"/>
+            <corners android:radius="999dp"/>
+            <solid android:color="#2A2A2E"/>
+        </shape>
+    </item>
+
+    <item android:left="10dp" android:top="60dp">
+        <shape android:shape="rectangle">
+            <size android:width="92dp" android:height="16dp"/>
+            <corners android:radius="999dp"/>
+            <solid android:color="#242428"/>
+        </shape>
+    </item>
+
+    <item android:left="22dp" android:top="98dp">
+        <shape android:shape="rectangle">
+            <size android:width="80dp" android:height="14dp"/>
+            <corners android:radius="999dp"/>
+            <solid android:color="#2D2D31"/>
+        </shape>
+    </item>
+
+    <item android:left="14dp" android:top="134dp">
+        <shape android:shape="rectangle">
+            <size android:width="96dp" android:height="16dp"/>
+            <corners android:radius="999dp"/>
+            <solid android:color="#232327"/>
+        </shape>
+    </item>
+
+    <!-- Droite -->
+    <item android:right="18dp" android:top="28dp">
+        <shape android:shape="rectangle">
+            <size android:width="74dp" android:height="14dp"/>
+            <corners android:radius="999dp"/>
+            <solid android:color="#2A2A2E"/>
+        </shape>
+    </item>
+
+    <item android:right="10dp" android:top="66dp">
+        <shape android:shape="rectangle">
+            <size android:width="96dp" android:height="16dp"/>
+            <corners android:radius="999dp"/>
+            <solid android:color="#242428"/>
+        </shape>
+    </item>
+
+    <item android:right="22dp" android:top="106dp">
+        <shape android:shape="rectangle">
+            <size android:width="86dp" android:height="14dp"/>
+            <corners android:radius="999dp"/>
+            <solid android:color="#2D2D31"/>
+        </shape>
+    </item>
+
+    <item android:right="14dp" android:top="142dp">
+        <shape android:shape="rectangle">
+            <size android:width="98dp" android:height="16dp"/>
+            <corners android:radius="999dp"/>
+            <solid android:color="#232327"/>
+        </shape>
+    </item>
+
+    <!-- Petit "point" en bas droite façon rature -->
+    <item android:right="56dp" android:top="156dp">
+        <shape android:shape="rectangle">
+            <size android:width="18dp" android:height="10dp"/>
+            <corners android:radius="999dp"/>
+            <solid android:color="#1F1F23"/>
+        </shape>
+    </item>
+
+    <!-- Cadre sketchy par dessus -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent"/>
+            <stroke
+                android:width="2dp"
+                android:color="@color/sk_text"
+                android:dashWidth="6dp"
+                android:dashGap="4dp"/>
+            <corners android:radius="14dp"/>
+        </shape>
+    </item>
+
+</layer-list>

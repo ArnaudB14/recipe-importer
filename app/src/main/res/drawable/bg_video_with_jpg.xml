@@ -1,0 +1,11 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Image de fond -->
+    <item>
+        <bitmap
+            android:src="@drawable/scribble"
+            android:gravity="fill"
+            android:tileMode="clamp" />
+    </item>
+
+</layer-list>
