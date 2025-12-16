@@ -22,4 +22,8 @@ data class RecipeEntity(
     val isFavorite: Boolean = false,
     val portions: String = "",
     val macros: String = "",
+    val kcal: String = "",
+    val protein: String = "",
+    val carbs: String = "",
+    val fat: String = ""
 )

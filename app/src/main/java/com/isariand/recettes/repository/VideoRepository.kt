@@ -2,25 +2,29 @@
 
 package com.isariand.recettes.repository
 
+import android.util.Log
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.gson.Gson
+import com.isariand.recettes.data.GeminiRecipe
+import com.isariand.recettes.data.GeminiRecipeRaw
 import com.isariand.recettes.data.RecipeDao
 import com.isariand.recettes.data.RecipeEntity
 import com.isariand.recettes.data.VideoData
 import com.isariand.recettes.network.TikwmApiService
 import kotlinx.coroutines.flow.Flow
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.Content
-import com.google.ai.client.generativeai.type.Part
-import com.google.ai.client.generativeai.type.FileDataPart
-import com.google.gson.Gson
-import com.isariand.recettes.data.GeminiRecipe
-import com.google.ai.client.generativeai.type.TextPart
-import android.util.Log
 
 class VideoRepository(
     private val apiService: TikwmApiService,
     private val recipeDao: RecipeDao,
     geminiApiKey: String
 ) {
+
+    private val geminiModel = GenerativeModel(
+        modelName = "gemini-2.5-flash",
+        apiKey = geminiApiKey
+    )
+
+    private val gson = Gson()
 
     suspend fun testGeminiApi(): String {
         return try {
@@ -34,7 +38,6 @@ class VideoRepository(
     suspend fun fetchVideoDetails(videoLink: String): Result<VideoData> {
         return try {
             val response = apiService.getNoWatermarkVideo(videoLink)
-
             if (response.code == 0 && response.data != null) {
                 Result.success(response.data)
             } else {
@@ -44,13 +47,6 @@ class VideoRepository(
             Result.failure(e)
         }
     }
-
-    private val geminiModel = GenerativeModel(
-        modelName = "gemini-2.5-flash",
-        apiKey = geminiApiKey
-    )
-
-    private val gson = Gson()
 
     private fun logLong(tag: String, message: String, max: Int = 3500) {
         if (message.length <= max) {
@@ -64,7 +60,6 @@ class VideoRepository(
             i = end
         }
     }
-
 
     suspend fun analyzeTextAndGetRecipe(recipeText: String): Result<GeminiRecipe> {
         val tag = "GeminiText"
@@ -91,6 +86,8 @@ Ta tâche :
 - Si c'est en anglais, traduis le en français.
 - Estime les calories ainsi que les macros si possible.
 - N'ajoute PAS les macros dans la description.
+- Ne numérote pas ls instructions, il y en a déjà d'ajouté automatiquement mais mets les quand même en liste.
+- N'ajoute pas de tiret dans la liste des ingrédients, il y en déjà d'ajouté automatiquement mais mets les quand même en liste.
 
 FORMAT JSON OBLIGATOIRE :
 {
@@ -99,6 +96,7 @@ FORMAT JSON OBLIGATOIRE :
   "ingredients": "",
   "instructions": "",
   "cookingTime": "",
+  "portions": "",
   "macros": { "kcal":"", "p":"", "g":"", "l":"" }
 }
 
@@ -106,13 +104,17 @@ FORMAT JSON OBLIGATOIRE :
 - p/g/l en grammes ex "32"
 - si inconnu => ""
 
+- portions ex "2" ou "4"
+- Essaye d'estimer, et si tu n'y arrives pas => ""
 
 """.trimIndent()
 
             Log.d(tag, "Sending TEXT to Gemini")
             Log.d(tag, recipeText)
 
-            val response = geminiModel.generateContent(prompt)
+            val response = retryGemini {
+                geminiModel.generateContent(prompt)
+            }
 
             val raw = response.text
             Log.d(tag, "RAW RESPONSE:\n$raw")
@@ -129,9 +131,26 @@ FORMAT JSON OBLIGATOIRE :
 
             Log.d(tag, "CLEANED JSON:\n$cleanedJson")
 
-            val recipe = gson.fromJson(cleanedJson, GeminiRecipe::class.java)
+            // Si besoin, tu peux log en chunks :
+            // logLong(tag, cleanedJson)
+
+            val rawRecipe = gson.fromJson(cleanedJson, GeminiRecipeRaw::class.java)
+
+            val recipe = GeminiRecipe(
+                title = rawRecipe.title,
+                description = rawRecipe.description,
+                ingredients = anyToMultilineString(rawRecipe.ingredients),
+                instructions = anyToMultilineString(rawRecipe.instructions),
+                cookingTime = rawRecipe.cookingTime,
+                macros = rawRecipe.macros,
+                portions = rawRecipe.portions.trim(),
+            )
+
+            val portions = rawRecipe.portions.ifBlank { guessPortionsFromText(recipeText) }
+
 
             Result.success(recipe)
+
 
         } catch (e: Exception) {
             Log.e(tag, "Analyze text error: ${e.message}", e)
@@ -144,23 +163,48 @@ FORMAT JSON OBLIGATOIRE :
         videoData: VideoData,        // Données brutes TikWM
         geminiRecipe: GeminiRecipe   // Données structurées Gemini
     ) {
-        val recipeEntity = RecipeEntity(
-            // Utilise le titre extrait par Gemini comme titre par défaut
-            customTitle = geminiRecipe.title,
+        // ✅ Convertit l'objet GeminiMacros en chaînes simples pour la DB
+        val kcal = geminiRecipe.macros?.kcal.orEmpty()
+        val protein = geminiRecipe.macros?.p.orEmpty()
+        val carbs = geminiRecipe.macros?.g.orEmpty()
+        val fat = geminiRecipe.macros?.l.orEmpty()
 
-            // Champs structurés par Gemini
+        // ✅ Optionnel : garder une version texte compacte dans la colonne "macros" (si tu l'as encore)
+        val macrosText = listOfNotNull(
+            kcal.takeIf { it.isNotBlank() }?.let { "${it} kcal" },
+            protein.takeIf { it.isNotBlank() }?.let { "P ${it}g" },
+            carbs.takeIf { it.isNotBlank() }?.let { "G ${it}g" },
+            fat.takeIf { it.isNotBlank() }?.let { "L ${it}g" }
+        ).joinToString(" • ")
+
+        val recipeEntity = RecipeEntity(
+            id = 0,
+
+            // Titres
+            customTitle = geminiRecipe.title,
             recipeTitle = geminiRecipe.title,
+            videoTitle = videoData.title ?: "Titre non spécifié",
+
+            // Contenu
             description = geminiRecipe.description,
             ingredients = geminiRecipe.ingredients,
             instructions = geminiRecipe.instructions,
             cookingTime = geminiRecipe.cookingTime,
-            macros = geminiRecipe.macros,
+
+            kcal = kcal,
+            protein = protein,
+            carbs = carbs,
+            fat = fat,
+
+            macros = macrosText,
+
+            portions = geminiRecipe.portions.trim(),
+            // Divers
             dateAdded = System.currentTimeMillis(),
             videoUrl = videoUrl,
-            noWatermarkUrl = videoData.noWatermarkUrl,
-            id = 0,
-            videoTitle = videoData.title ?: "Titre non spécifié",
+            noWatermarkUrl = videoData.noWatermarkUrl
         )
+
         recipeDao.insert(recipeEntity)
     }
 
@@ -222,5 +266,53 @@ FORMAT JSON OBLIGATOIRE :
     }
 
     fun observeRecipeById(id: Long) = recipeDao.observeRecipeById(id)
+
+    private fun guessPortionsFromText(recipeText: String): String {
+        val r = Regex("""(?i)\b(pour|serves|portion(?:s)?)\s*(\d{1,2})\b""")
+        return r.find(recipeText)?.groupValues?.getOrNull(2).orEmpty()
+    }
+
+    private fun anyToMultilineString(value: Any?): String {
+        return when (value) {
+            null -> ""
+            is String -> value.trim()
+            is List<*> -> value
+                .filterIsInstance<String>()
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .joinToString("\n")
+                .trim()
+            else -> value.toString().trim()
+        }
+    }
+
+    private suspend fun <T> retryGemini(
+        times: Int = 3,
+        initialDelayMs: Long = 500,
+        factor: Double = 2.0,
+        block: suspend () -> T
+    ): T {
+        var delayMs = initialDelayMs
+        var last: Exception? = null
+
+        repeat(times) { attempt ->
+            try {
+                return block()
+            } catch (e: Exception) {
+                last = e
+                val msg = e.message.orEmpty()
+                val overloaded = msg.contains("overloaded", ignoreCase = true) ||
+                        msg.contains("\"code\": 503") ||
+                        msg.contains("UNAVAILABLE", ignoreCase = true)
+
+                // si c’est pas une surcharge, pas besoin de retenter
+                if (!overloaded || attempt == times - 1) throw e
+
+                kotlinx.coroutines.delay(delayMs)
+                delayMs = (delayMs * factor).toLong()
+            }
+        }
+        throw last ?: RuntimeException("Gemini retry failed")
+    }
 
 }

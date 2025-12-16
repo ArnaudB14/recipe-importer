@@ -136,10 +136,11 @@ class RecipeAdapter(
             favIcon.setImageResource(icon)
             metaBadgesContainer.removeAllViews()
 
-            if (recipe.kcal.isNotBlank()) metaBadgesContainer.addView(makeMetaBadge(itemView, "${recipe.kcal} kcal"))
-            if (recipe.protein.isNotBlank()) metaBadgesContainer.addView(makeMetaBadge(itemView, "P ${recipe.protein}g"))
-            if (recipe.carbs.isNotBlank()) metaBadgesContainer.addView(makeMetaBadge(itemView, "G ${recipe.carbs}g"))
-            if (recipe.fat.isNotBlank()) metaBadgesContainer.addView(makeMetaBadge(itemView, "L ${recipe.fat}g"))
+            if (recipe.kcal.isNotBlank()) metaBadgesContainer.addView(makeMetaBadge(itemView.context, "${recipe.kcal} kcal"))
+            if (recipe.protein.isNotBlank()) metaBadgesContainer.addView(makeMetaBadge(itemView.context, "P ${recipe.protein}g"))
+            if (recipe.carbs.isNotBlank()) metaBadgesContainer.addView(makeMetaBadge(itemView.context, "G ${recipe.carbs}g"))
+            if (recipe.fat.isNotBlank()) metaBadgesContainer.addView(makeMetaBadge(itemView.context, "L ${recipe.fat}g"))
+
         }
 
         private fun makeMetaBadge(ctx: Context, text: String): TextView {

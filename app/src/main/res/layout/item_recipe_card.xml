@@ -23,7 +23,7 @@
             android:layout_weight="1"
             android:text="Titre de la recette sauvegardée"
             android:textColor="@color/sk_text"
-            android:textSize="22sp"
+            android:textSize="26sp"
             android:textStyle="bold"
             android:fontFamily="@font/caveat_regular"
             android:maxLines="2"

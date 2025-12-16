@@ -16,4 +16,7 @@
     <!-- Accent “stylo” -->
     <color name="sk_primary">#1D4ED8</color>     <!-- bleu stylo -->
     <color name="sk_secondary">#F59E0B</color>   <!-- surligneur -->
+
+    <color name="sk_portions">#E07A3F</color>
+
 </resources>

@@ -83,24 +83,6 @@
                 app:flexWrap="wrap"
                 app:justifyContent="flex_start"/>
 
-            <EditText
-                android:id="@+id/video_description"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/sketch_border_dashed"
-                android:padding="12dp"
-                android:hint="Description"
-                android:textColor="@color/sk_text"
-                android:textSize="15sp"
-                android:fontFamily="@font/architects_daughter_regular"
-                android:lineSpacingExtra="3dp"
-                android:inputType="textMultiLine|textCapSentences"
-                android:gravity="top"
-                android:minLines="2"
-                android:scrollbars="none"
-                android:overScrollMode="never" />
-
             <!-- Actions -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -120,6 +102,15 @@
                     android:backgroundTint="@color/sk_text"
                     android:textColor="@color/sk_paper"
                     tools:ignore="MissingConstraints"/>
+
+                <Button
+                    android:id="@+id/shareButton"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@android:color/transparent"
+                    android:drawableStart="@drawable/ic_share_sketch"
+                    android:drawablePadding="8dp"/>
 
             </LinearLayout>
         </LinearLayout>
@@ -148,6 +139,17 @@
                 android:textSize="22sp"
                 android:fontFamily="@font/caveat_regular"/>
 
+            <LinearLayout
+                android:id="@+id/ingredientsPreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/sketch_border_dashed"
+                android:padding="12dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
+
             <EditText
                 android:id="@+id/ingredientsContent"
                 android:layout_width="match_parent"
@@ -167,6 +169,15 @@
                 android:overScrollMode="ifContentScrolls"
                 android:scrollbars="vertical"
                 tools:text="- Cheddar : 25g\n- Farine : 60g\n- Skyr : 60g\n- Levure : 2,5g\n- Poulet : 75g\n- Curry\n- Crème 4% : 25g"/>
+
+            <LinearLayout
+                android:id="@+id/ingredientsDisplay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"/>
+
         </LinearLayout>
 
         <!-- INSTRUCTIONS NOTE -->
@@ -193,6 +204,16 @@
                 android:textSize="22sp"
                 android:fontFamily="@font/caveat_regular"/>
 
+            <LinearLayout
+                android:id="@+id/instructionsPreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/sketch_border_dashed"
+                android:padding="12dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
             <EditText
                 android:id="@+id/instructionsContent"
                 android:layout_width="match_parent"
@@ -212,6 +233,15 @@
                 android:overScrollMode="ifContentScrolls"
                 android:scrollbars="vertical"
                 tools:text="1. Mélanger farine, skyr et levure.\n2. Former le bun et cuire.\n3. Préparer le poulet curry.\n4. Garnir et servir."/>
+
+            <LinearLayout
+                android:id="@+id/instructionsDisplay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"/>
+
         </LinearLayout>
 
         <com.google.android.flexbox.FlexboxLayout
