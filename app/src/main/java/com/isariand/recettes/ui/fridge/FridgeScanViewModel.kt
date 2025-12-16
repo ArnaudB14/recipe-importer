@@ -53,7 +53,6 @@ class FridgeScanViewModel(
 
             val fridgeSet = items.map { normalize(it) }.toSet()
 
-            // on récupère toutes les recettes une fois (c’est OK si tu n’en as pas 10 000)
             val all = recipeDao.getAllRecipesOnce()
             val matches = all.count { recipe ->
                 recipeMatchesAll(fridgeSet, recipe.ingredients)

@@ -58,7 +58,6 @@ class FridgeScanFragment : Fragment(R.layout.fragment_fridge_scan) {
 
         viewModel.detectedItems.observe(viewLifecycleOwner) { items ->
             binding.itemsContainer.text = items.joinToString(", ")
-            // (ensuite on fera une vraie UI chips + suppression)
         }
 
         viewModel.matchingRecipesCount.observe(viewLifecycleOwner) { count ->
