@@ -20,4 +20,6 @@ data class RecipeEntity(
     val noWatermarkUrl: String? = null,
     val tags: String = "",
     val isFavorite: Boolean = false,
+    val portions: String = "",
+    val macros: String = "",
 )

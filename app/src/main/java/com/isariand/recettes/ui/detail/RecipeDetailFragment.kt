@@ -15,8 +15,10 @@ import com.isariand.recettes.data.AppDatabase
 import java.lang.IllegalArgumentException
 import android.widget.TextView
 import android.content.Intent
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.view.ViewGroup
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.res.ResourcesCompat
 import com.google.android.flexbox.FlexboxLayout
 import androidx.core.widget.addTextChangedListener
@@ -97,6 +99,12 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
                 binding.ingredientsContent.setText(it.ingredients)
                 binding.instructionsContent.setText(it.instructions)
                 binding.tagsInput.setText(it.tags ?: "")
+                binding.metaBadgesContainer.removeAllViews()
+
+                val macros = it.macros.trim()
+                if (macros.isNotBlank()) {
+                    binding.metaBadgesContainer.addView(makeMetaBadge(macros))
+                }
 
                 val icon = if (it.isFavorite) R.drawable.ic_star_filled else R.drawable.ic_star_outline
                 binding.favButton.setImageResource(icon)
@@ -258,6 +266,28 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
         _binding = null
     }
 }
+
+private fun makeMetaBadge(view: View, text: String): TextView {
+    val ctx = view.context
+    return TextView(ctx).apply {
+        this.text = text
+        textSize = 13f
+        setTextColor(ctx.getColor(android.R.color.white))
+        setPadding(22, 10, 22, 10)
+        typeface = ResourcesCompat.getFont(ctx, R.font.architects_daughter_regular)
+
+        background = GradientDrawable().apply {
+            cornerRadius = 999f
+            setColor(ctx.getColor(R.color.sk_text))
+        }
+
+        layoutParams = ViewGroup.MarginLayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { setMargins(0, 0, 12, 12) }
+    }
+}
+
 
 
 // 💡 CORRECTION : La Factory adaptée aux types Long et VideoRepository

@@ -68,12 +68,20 @@
                 android:importantForAutofill="no"
                 android:inputType="textCapSentences"
                 android:textColor="@color/sk_text"
-                android:textSize="28sp"
+                android:textSize="30sp"
                 android:textStyle="bold"
                 android:fontFamily="@font/caveat_regular"
                 android:paddingTop="2dp"
                 android:paddingBottom="4dp"
                 tools:text="Buns poulet curry (Titre personnalisé)" />
+
+            <com.google.android.flexbox.FlexboxLayout
+                android:id="@+id/metaBadgesContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                app:flexWrap="wrap"
+                app:justifyContent="flex_start"/>
 
             <EditText
                 android:id="@+id/video_description"
@@ -115,6 +123,7 @@
 
             </LinearLayout>
         </LinearLayout>
+
 
         <!-- INGREDIENTS NOTE -->
         <LinearLayout

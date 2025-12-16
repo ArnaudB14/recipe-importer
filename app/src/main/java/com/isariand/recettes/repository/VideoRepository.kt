@@ -81,7 +81,7 @@ Ta tâche :
 - Structurer cette recette proprement
 - Déduire les ingrédients et quantités
 - Déduire les étapes de préparation
-- Estimer le temps de préparation/cuisson si possible
+- Estimer les macros si possible
 
 ⚠️ RÈGLES STRICTES :
 - Réponds UNIQUEMENT avec un JSON valide
@@ -89,7 +89,8 @@ Ta tâche :
 - Si une info est absente, mets une chaîne vide ""
 - Si il n'y a pas d'instructions, invente les en te basant sur le titre de la recette et les ingrédients.
 - Si c'est en anglais, traduis le en français.
-- Estime les calories ainsi que les macros de chaque recettes et ajoute les dans la description sous forme de liste.
+- Estime les calories ainsi que les macros si possible.
+- N'ajoute PAS les macros dans la description.
 
 FORMAT JSON OBLIGATOIRE :
 {
@@ -97,8 +98,15 @@ FORMAT JSON OBLIGATOIRE :
   "description": "",
   "ingredients": "",
   "instructions": "",
-  "cookingTime": ""
+  "cookingTime": "",
+  "macros": { "kcal":"", "p":"", "g":"", "l":"" }
 }
+
+- kcal ex "450"
+- p/g/l en grammes ex "32"
+- si inconnu => ""
+
+
 """.trimIndent()
 
             Log.d(tag, "Sending TEXT to Gemini")
@@ -146,7 +154,7 @@ FORMAT JSON OBLIGATOIRE :
             ingredients = geminiRecipe.ingredients,
             instructions = geminiRecipe.instructions,
             cookingTime = geminiRecipe.cookingTime,
-
+            macros = geminiRecipe.macros,
             dateAdded = System.currentTimeMillis(),
             videoUrl = videoUrl,
             noWatermarkUrl = videoData.noWatermarkUrl,
