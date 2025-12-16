@@ -17,6 +17,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import com.isariand.recettes.BuildConfig
 
 class MainActivity : FragmentActivity() {
 
@@ -24,10 +25,9 @@ class MainActivity : FragmentActivity() {
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
 
-                val GEMINI_API_KEY_SECRET = "AIzaSyCU2v3XBpYQK1yPfSZ8zJLf9kTtbfSyIYg"
                 val apiService = RetrofitClient.apiService
                 val recipeDao = AppDatabase.getDatabase(applicationContext).recipeDao()
-                val repository = VideoRepository(apiService, recipeDao, geminiApiKey = GEMINI_API_KEY_SECRET)
+                val repository = VideoRepository(apiService, recipeDao, geminiApiKey = BuildConfig.GEMINI_API_KEY)
 
                 @Suppress("UNCHECKED_CAST")
                 return MainViewModel(repository) as T
@@ -94,7 +94,7 @@ class MainActivity : FragmentActivity() {
 
             viewModel.errorMessage.observe(this) { message ->
                 if (message != null) {
-                    Toast.makeText(this, "Erreur API : $message", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                     navigateToRecipeList()
                     viewModel.errorMessage.removeObservers(this)
                 }

@@ -1,3 +1,14 @@
+import java.util.Properties
+
+fun loadLocalProperty(key: String): String {
+    val props = Properties()
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { props.load(it) }
+    }
+    return props.getProperty(key) ?: ""
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,9 +27,9 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
+        val geminiApiKey = loadLocalProperty("GEMINI_API_KEY")
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     buildTypes {
@@ -31,16 +42,11 @@ android {
         }
     }
 
-    val geminiApiKey = providers.gradleProperty("GEMINI_API_KEY")
-    if (geminiApiKey.isPresent) {
-        buildTypes.all {
-            resValue("string", "gemini_api_key", "\"${geminiApiKey.get()}\"")
-        }
-    }
-
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

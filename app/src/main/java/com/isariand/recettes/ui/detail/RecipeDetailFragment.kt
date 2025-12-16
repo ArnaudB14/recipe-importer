@@ -23,6 +23,7 @@ import com.isariand.recettes.databinding.FragmentRecipeDetailBinding
 import com.isariand.recettes.network.RetrofitClient
 import com.isariand.recettes.repository.VideoRepository
 import java.lang.IllegalArgumentException
+import com.isariand.recettes.BuildConfig
 
 class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
 
@@ -32,10 +33,9 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
     private val recipeId: Long by lazy { arguments?.getLong("recipeId") ?: 0L }
 
     private val viewModel: RecipeDetailViewModel by viewModels {
-        val GEMINI_API_KEY_SECRET = "AIzaSyCU2v3XBpYQK1yPfSZ8zJLf9kTtbfSyIYg"
         val apiService = RetrofitClient.apiService
         val recipeDao = AppDatabase.getDatabase(requireContext()).recipeDao()
-        val repository = VideoRepository(apiService, recipeDao, geminiApiKey = GEMINI_API_KEY_SECRET)
+        val repository = VideoRepository(apiService, recipeDao, geminiApiKey = BuildConfig.GEMINI_API_KEY)
         RecipeDetailViewModelFactory(repository, recipeId)
     }
 
