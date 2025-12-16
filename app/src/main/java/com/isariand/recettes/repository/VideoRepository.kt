@@ -10,6 +10,9 @@ import com.isariand.recettes.data.RecipeEntity
 import com.isariand.recettes.data.VideoData
 import com.isariand.recettes.network.TikwmApiService
 import kotlinx.coroutines.flow.Flow
+import android.graphics.Bitmap
+import com.google.ai.client.generativeai.type.content
+import com.isariand.recettes.data.GeminiFridgeRaw
 
 class VideoRepository(
     private val apiService: TikwmApiService,
@@ -124,6 +127,56 @@ FORMAT JSON OBLIGATOIRE :
 
         } catch (e: Exception) {
             Log.e(tag, "Analyze text error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun analyzeFridgeImage(bitmap: Bitmap): Result<List<String>> {
+        val tag = "GeminiFridge"
+
+        return try {
+            // Prompt: JSON strict, liste courte, items normalisés
+            val prompt = """
+Tu analyses une photo d'un frigo ou d'un plan de travail et tu listes les ingrédients visibles.
+
+RÈGLES STRICTES :
+- Réponds UNIQUEMENT avec un JSON valide
+- AUCUN texte hors JSON
+- Liste max 25 éléments
+- Mets des noms courts en français (ex: "oeufs", "lait", "tomates", "poulet", "fromage")
+- Si tu doutes, n'invente pas
+
+FORMAT JSON OBLIGATOIRE :
+{ "items": ["", "", ""] }
+""".trimIndent()
+
+            // Appel multimodal (image + texte)
+            val input = content {
+                image(bitmap)
+                text(prompt)
+            }
+
+            val response = geminiModel.generateContent(input)
+
+            val raw = response.text.orEmpty().trim()
+            if (raw.isBlank()) return Result.failure(Exception("Réponse Gemini vide"))
+
+            val cleaned = raw
+                .replace("```json", "", ignoreCase = true)
+                .replace("```", "")
+                .trim()
+
+            val parsed = gson.fromJson(cleaned, GeminiFridgeRaw::class.java)
+
+            val items = parsed.items
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinctBy { it.lowercase() }
+                .take(25)
+
+            Result.success(items)
+        } catch (e: Exception) {
+            Log.e(tag, "analyzeFridgeImage error: ${e.message}", e)
             Result.failure(e)
         }
     }

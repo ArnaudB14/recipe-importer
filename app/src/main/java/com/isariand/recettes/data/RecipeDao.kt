@@ -78,4 +78,7 @@ interface RecipeDao {
     @Query("SELECT COUNT(*) FROM recipes WHERE videoUrl = :url LIMIT 1")
     suspend fun countByVideoUrl(url: String): Int
 
+    @Query("SELECT * FROM recipes ORDER BY dateAdded DESC")
+    suspend fun getAllRecipesOnce(): List<RecipeEntity>
+
 }

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/fridgeScroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/takePhotoButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:textStyle="bold"
+            android:fontFamily="@font/architects_daughter_regular"
+            android:backgroundTint="@color/sk_text"
+            android:textColor="@color/sk_paper"
+            android:text="Prendre une photo du frigo" />
+
+        <ImageView
+            android:id="@+id/photoPreview"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="12dp"
+            android:scaleType="centerCrop"
+            android:background="@drawable/sketch_border_dashed" />
+
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/itemsTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:textColor="@color/sk_text"
+            android:textColorHint="@color/sk_text_muted"
+            android:text="Ingrédients détectés :"
+            android:fontFamily="@font/architects_daughter_regular"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/itemsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/sketch_border_dashed"
+            android:padding="12dp"
+            android:text="(aucun)"
+            android:minHeight="60dp" />
+
+        <Button
+            android:id="@+id/findRecipesButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textAllCaps="false"
+            android:textStyle="bold"
+            android:fontFamily="@font/architects_daughter_regular"
+            android:backgroundTint="@color/sk_text"
+            android:textColor="@color/sk_paper"
+            android:text="Trouver des recettes" />
+
+        <TextView
+            android:id="@+id/resultsInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="@color/sk_text"
+            android:fontFamily="@font/architects_daughter_regular"
+            android:textColorHint="@color/sk_text_muted"
+            android:text="Recettes trouvées : 0" />
+
+    </LinearLayout>
+</ScrollView>

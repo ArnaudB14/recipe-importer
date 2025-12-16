@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">RecettesTikTok</string>
     <string name="share">Partager</string>
+    <string name="scan_fridge">Scanner le frigo</string>
 </resources>

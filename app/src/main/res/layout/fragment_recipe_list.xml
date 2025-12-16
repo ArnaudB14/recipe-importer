@@ -174,4 +174,20 @@
             android:fontFamily="@font/architects_daughter_regular"/>
     </LinearLayout>
 
+    <ImageButton
+        android:id="@+id/scanFridgeButton"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/sketch_fab_bg"
+        android:src="@drawable/ic_scan_sketch"
+        android:contentDescription="@string/scan_fridge"
+        android:padding="12dp"
+        android:scaleType="centerInside"
+        android:tint="@color/sk_text"
+        android:elevation="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

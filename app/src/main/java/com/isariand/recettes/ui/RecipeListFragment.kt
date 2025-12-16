@@ -122,6 +122,12 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
             binding.favFilterChip.alpha = if (enabled) 1f else 0.6f
         }
 
+        binding.scanFridgeButton.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, com.isariand.recettes.ui.fridge.FridgeScanFragment())
+                .addToBackStack(null)
+                .commit()
+        }
 
     }
 
