@@ -1,5 +1,3 @@
-// Fichier: repository/VideoRepository.kt (corrigé)
-
 package com.isariand.recettes.repository
 
 import android.util.Log
@@ -26,38 +24,16 @@ class VideoRepository(
 
     private val gson = Gson()
 
-    suspend fun testGeminiApi(): String {
-        return try {
-            val testResponse = geminiModel.generateContent("Dis-moi bonjour.")
-            "Test réussi: ${testResponse.text}"
-        } catch (e: Exception) {
-            "Test échoué: ${e.message}"
-        }
-    }
-
     suspend fun fetchVideoDetails(videoLink: String): Result<VideoData> {
         return try {
             val response = apiService.getNoWatermarkVideo(videoLink)
             if (response.code == 0 && response.data != null) {
                 Result.success(response.data)
             } else {
-                Result.failure(Exception("Erreur API : ${response.msg}"))
+                Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
             Result.failure(e)
-        }
-    }
-
-    private fun logLong(tag: String, message: String, max: Int = 3500) {
-        if (message.length <= max) {
-            Log.d(tag, message)
-            return
-        }
-        var i = 0
-        while (i < message.length) {
-            val end = (i + max).coerceAtMost(message.length)
-            Log.d(tag, message.substring(i, end))
-            i = end
         }
     }
 
@@ -123,16 +99,12 @@ FORMAT JSON OBLIGATOIRE :
                 return Result.failure(Exception("Réponse Gemini vide"))
             }
 
-            // Nettoyage sécurité (au cas où)
             val cleanedJson = raw
                 .replace("```json", "")
                 .replace("```", "")
                 .trim()
 
             Log.d(tag, "CLEANED JSON:\n$cleanedJson")
-
-            // Si besoin, tu peux log en chunks :
-            // logLong(tag, cleanedJson)
 
             val rawRecipe = gson.fromJson(cleanedJson, GeminiRecipeRaw::class.java)
 
@@ -146,9 +118,6 @@ FORMAT JSON OBLIGATOIRE :
                 portions = rawRecipe.portions.trim(),
             )
 
-            val portions = rawRecipe.portions.ifBlank { guessPortionsFromText(recipeText) }
-
-
             Result.success(recipe)
 
 
@@ -160,16 +129,14 @@ FORMAT JSON OBLIGATOIRE :
 
     suspend fun saveRecipe(
         videoUrl: String,
-        videoData: VideoData,        // Données brutes TikWM
-        geminiRecipe: GeminiRecipe   // Données structurées Gemini
+        videoData: VideoData,
+        geminiRecipe: GeminiRecipe
     ) {
-        // ✅ Convertit l'objet GeminiMacros en chaînes simples pour la DB
         val kcal = geminiRecipe.macros?.kcal.orEmpty()
         val protein = geminiRecipe.macros?.p.orEmpty()
         val carbs = geminiRecipe.macros?.g.orEmpty()
         val fat = geminiRecipe.macros?.l.orEmpty()
 
-        // ✅ Optionnel : garder une version texte compacte dans la colonne "macros" (si tu l'as encore)
         val macrosText = listOfNotNull(
             kcal.takeIf { it.isNotBlank() }?.let { "${it} kcal" },
             protein.takeIf { it.isNotBlank() }?.let { "P ${it}g" },
@@ -179,32 +146,23 @@ FORMAT JSON OBLIGATOIRE :
 
         val recipeEntity = RecipeEntity(
             id = 0,
-
-            // Titres
             customTitle = geminiRecipe.title,
             recipeTitle = geminiRecipe.title,
             videoTitle = videoData.title ?: "Titre non spécifié",
-
-            // Contenu
             description = geminiRecipe.description,
             ingredients = geminiRecipe.ingredients,
             instructions = geminiRecipe.instructions,
             cookingTime = geminiRecipe.cookingTime,
-
             kcal = kcal,
             protein = protein,
             carbs = carbs,
             fat = fat,
-
             macros = macrosText,
-
             portions = geminiRecipe.portions.trim(),
-            // Divers
             dateAdded = System.currentTimeMillis(),
             videoUrl = videoUrl,
             noWatermarkUrl = videoData.noWatermarkUrl
         )
-
         recipeDao.insert(recipeEntity)
     }
 
@@ -236,14 +194,6 @@ FORMAT JSON OBLIGATOIRE :
         recipeDao.updateDescription(recipeId, value)
     }
 
-    fun searchRecipes(query: String): Flow<List<RecipeEntity>> {
-        return recipeDao.searchRecipes(query)
-    }
-
-    suspend fun updateTags(recipeId: Long, tags: String) {
-        recipeDao.updateTags(recipeId, tags)
-    }
-
     suspend fun saveTags(recipeId: Long, tags: String) {
         recipeDao.updateTags(recipeId, tags)
     }
@@ -257,20 +207,11 @@ FORMAT JSON OBLIGATOIRE :
             .sortedBy { it.lowercase() }
     }
 
-    suspend fun setFavorite(recipeId: Long, isFav: Boolean) {
-        recipeDao.setFavorite(recipeId, isFav)
-    }
-
     suspend fun toggleFavorite(id: Long) {
         recipeDao.toggleFavorite(id)
     }
 
     fun observeRecipeById(id: Long) = recipeDao.observeRecipeById(id)
-
-    private fun guessPortionsFromText(recipeText: String): String {
-        val r = Regex("""(?i)\b(pour|serves|portion(?:s)?)\s*(\d{1,2})\b""")
-        return r.find(recipeText)?.groupValues?.getOrNull(2).orEmpty()
-    }
 
     private fun anyToMultilineString(value: Any?): String {
         return when (value) {
@@ -305,7 +246,6 @@ FORMAT JSON OBLIGATOIRE :
                         msg.contains("\"code\": 503") ||
                         msg.contains("UNAVAILABLE", ignoreCase = true)
 
-                // si c’est pas une surcharge, pas besoin de retenter
                 if (!overloaded || attempt == times - 1) throw e
 
                 kotlinx.coroutines.delay(delayMs)

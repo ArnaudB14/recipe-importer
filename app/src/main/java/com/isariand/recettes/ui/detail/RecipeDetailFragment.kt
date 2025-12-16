@@ -10,7 +10,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.startActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
@@ -40,11 +39,9 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
         RecipeDetailViewModelFactory(repository, recipeId)
     }
 
-    // ---------- UI helpers (dp) ----------
     private fun Int.dp(): Int =
         (this * requireContext().resources.displayMetrics.density).toInt()
 
-    // ---------- Tags ----------
     private fun renderTags(tagsRaw: String) {
         val container = binding.tagsContainer
         container.removeAllViews()
@@ -78,7 +75,6 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
         }
     }
 
-    // ---------- Pretty display: Ingredients ----------
     private fun renderIngredientsSketchy(raw: String) {
         val container = binding.ingredientsDisplay
         container.removeAllViews()
@@ -96,18 +92,17 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
 
         val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.TOP // ✅ aligne la puce avec la 1ère ligne
+            gravity = android.view.Gravity.TOP
             layoutParams = ViewGroup.MarginLayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 0, 0, 12.dp()) } // ✅ + d’espace
+            ).apply { setMargins(0, 0, 0, 12.dp()) }
         }
 
-        // ✅ puce ronde + alignée
         val bullet = View(ctx).apply {
             val size = 10.dp()
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                setMargins(6.dp(), 8.dp(), 14.dp(), 0) // ✅ tweak alignement
+                setMargins(6.dp(), 8.dp(), 14.dp(), 0)
             }
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
@@ -132,7 +127,6 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
         return row
     }
 
-    // ---------- Pretty display: Instructions ----------
     private fun renderInstructionsSketchy(raw: String) {
         val container = binding.instructionsDisplay
         container.removeAllViews()
@@ -150,11 +144,11 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
 
         val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.TOP // ✅ badge aligné avec la 1ère ligne
+            gravity = android.view.Gravity.TOP
             layoutParams = ViewGroup.MarginLayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 0, 0, 18.dp()) } // ✅ + d’espace
+            ).apply { setMargins(0, 0, 0, 18.dp()) }
         }
 
         val badgeSize = 34.dp()
@@ -167,7 +161,7 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
             gravity = android.view.Gravity.CENTER
 
             layoutParams = LinearLayout.LayoutParams(badgeSize, badgeSize).apply {
-                setMargins(0, 2.dp(), 14.dp(), 0) // ✅ tweak alignement
+                setMargins(0, 2.dp(), 14.dp(), 0)
             }
 
             background = GradientDrawable().apply {
@@ -192,7 +186,6 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
         return row
     }
 
-    // ---------- Tag suggestions ----------
     private fun renderTagSuggestions(query: String) {
         val all = viewModel.allTags.value.orEmpty()
 
@@ -253,7 +246,6 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
         }
     }
 
-    // ---------- Lifecycle ----------
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentRecipeDetailBinding.bind(view)
@@ -264,24 +256,17 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
             return
         }
 
-        // Observer les données du ViewModel
         viewModel.recipe.observe(viewLifecycleOwner) { recipe ->
             recipe?.let {
                 binding.recipeTitle.setText(it.customTitle)
-
-                // Ingrédients (edit + display)
                 binding.ingredientsContent.setText(it.ingredients)
                 renderIngredientsSketchy(it.ingredients)
                 binding.ingredientsContent.visibility = View.GONE
                 binding.ingredientsDisplay.visibility = View.VISIBLE
-
-                // Instructions (edit + display)
                 binding.instructionsContent.setText(it.instructions)
                 renderInstructionsSketchy(it.instructions)
                 binding.instructionsContent.visibility = View.GONE
                 binding.instructionsDisplay.visibility = View.VISIBLE
-
-                // Tags
                 binding.tagsInput.setText(it.tags)
                 renderTags(it.tags)
 
@@ -324,7 +309,6 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
             shareRecipe()
         }
 
-        // Titre
         binding.recipeTitle.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 val newTitle = binding.recipeTitle.text.toString().trim()
@@ -341,7 +325,6 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
             }
         }
 
-        // Ingrédients : on sauvegarde + on repasse en display
         binding.ingredientsContent.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 val text = binding.ingredientsContent.text.toString()
@@ -358,7 +341,6 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
             binding.ingredientsContent.requestFocus()
         }
 
-        // Instructions : on sauvegarde + on repasse en display
         binding.instructionsContent.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 val text = binding.instructionsContent.text.toString()
@@ -375,8 +357,6 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
             binding.instructionsContent.requestFocus()
         }
 
-
-        // Tags (persist)
         binding.tagsInput.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 val tagsText = binding.tagsInput.text.toString()
@@ -385,7 +365,6 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
             }
         }
 
-        // Suggestions tags
         viewModel.loadAllTags()
         binding.tagsInput.addTextChangedListener { text ->
             renderTagSuggestions(text?.toString().orEmpty().trim())
@@ -459,7 +438,6 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
     }
 }
 
-// Badge simple (macros)
 private fun makeMetaBadge(ctx: android.content.Context, text: String): TextView {
     return TextView(ctx).apply {
         this.text = text

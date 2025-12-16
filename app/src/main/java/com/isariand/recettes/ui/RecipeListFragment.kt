@@ -7,10 +7,9 @@ import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
 import com.isariand.recettes.R
-import com.isariand.recettes.ui.detail.RecipeDetailFragment // 👈 Import du Fragment de Détail
+import com.isariand.recettes.ui.detail.RecipeDetailFragment
 import com.isariand.recettes.viewmodel.MainViewModel
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.core.widget.addTextChangedListener
@@ -18,8 +17,6 @@ import com.isariand.recettes.databinding.FragmentRecipeListBinding
 
 
 class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
-
-    // Partage le MainViewModel, qui détient le LiveData des recettes sauvegardées
     private val viewModel: MainViewModel by activityViewModels()
     private lateinit var adapter: RecipeAdapter
     private lateinit var recyclerView: RecyclerView
@@ -61,10 +58,8 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
 
                 val recipe = currentRecipes.getOrNull(position)
                 if (recipe != null) {
-                    // 👇 ici, le nom du champ dépend de ton Entity
                     viewModel.deleteRecipe(recipe.id)
                 } else {
-                    // si on ne retrouve pas l’item (rare), on redessine la liste
                     adapter.notifyItemChanged(position)
                 }
             }
@@ -72,8 +67,6 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
 
         itemTouchHelper.attachToRecyclerView(recyclerView)
 
-
-        // 2. Observation des données de Room via le MainViewModel
         viewModel.visibleRecipes.observe(viewLifecycleOwner) { recipes ->
             currentRecipes = recipes
             adapter.submitList(recipes)
@@ -133,19 +126,14 @@ class RecipeListFragment : Fragment(R.layout.fragment_recipe_list) {
     }
 
     private fun navigateToRecipeDetail(recipeId: Long) {
-        // Création du Fragment de Détail
         val detailFragment = RecipeDetailFragment()
-
-        // Création des arguments
         val args = Bundle().apply {
             putLong("recipeId", recipeId)
         }
         detailFragment.arguments = args
-
-        // Lancement de la transaction de Fragment
         parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, detailFragment) // R.id.fragment_container est dans activity_main.xml
-            .addToBackStack(null) // Permet de revenir en arrière
+            .replace(R.id.fragment_container, detailFragment)
+            .addToBackStack(null)
             .commit()
     }
 

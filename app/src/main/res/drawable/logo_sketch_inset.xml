@@ -2,6 +2,6 @@
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:drawable="@drawable/logo_recettes_tiktok"
     android:insetLeft="20dp"
-    android:insetTop="16dp"
+    android:insetTop="30dp"
     android:insetRight="20dp"
-    android:insetBottom="16dp" />
+    android:insetBottom="30dp" />

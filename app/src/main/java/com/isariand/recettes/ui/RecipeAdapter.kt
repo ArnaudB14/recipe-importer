@@ -4,7 +4,6 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -18,6 +17,7 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import androidx.core.graphics.drawable.DrawableCompat
 import android.widget.ImageView
+
 class RecipeAdapter(
     private val onRecipeClicked: (Long) -> Unit,
     private val onFavoriteClicked: (Long) -> Unit,
@@ -27,31 +27,24 @@ class RecipeAdapter(
     private var recipes: List<RecipeEntity> = emptyList()
     private var selectedTags: Set<String> = emptySet()
 
-    private val TAG_COLORS = listOf(
-        0xFFFFE08A.toInt(),
-        0xFFFFB3BA.toInt(),
-        0xFFBAFFC9.toInt(),
-        0xFFBAE1FF.toInt(),
-        0xFFD7BAFF.toInt(),
-        0xFFFFD6A5.toInt(),
-        0xFFBFFCC6.toInt(),
-        0xFFFFF5BA.toInt(),
-        0xFFC7CEEA.toInt(),
-        0xFFFFC6FF.toInt()
-    )
-
     private fun colorForTag(tag: String): Int {
-        val normalized = tag.trim().lowercase()
-        val idx = kotlin.math.abs(normalized.hashCode()) % TAG_COLORS.size
-        return TAG_COLORS[idx]
+        val key = tag.trim().lowercase()
+        val h = kotlin.math.abs(key.hashCode())
+
+        val hue = (h % 360).toFloat()
+
+        val sat = 0.30f + ((h / 360) % 10) / 100f    // 0.18 .. 0.27
+        val value = 0.95f + ((h / 3600) % 4) / 100f  // 0.94 .. 0.97
+
+        return Color.HSVToColor(floatArrayOf(hue, sat, value))
     }
 
-    private fun isDark(color: Int): Boolean {
-        val r = Color.red(color)
-        val g = Color.green(color)
-        val b = Color.blue(color)
-        val luminance = (0.299 * r + 0.587 * g + 0.114 * b)
-        return luminance < 140
+
+    private fun darken(color: Int, amount: Float): Int {
+        val hsv = FloatArray(3)
+        Color.colorToHSV(color, hsv)
+        hsv[2] = (hsv[2] * (1f - amount)).coerceIn(0f, 1f)
+        return Color.HSVToColor(hsv)
     }
 
     fun submitList(newRecipes: List<RecipeEntity>) {
@@ -94,11 +87,13 @@ class RecipeAdapter(
             val isSelected = selectedTags.contains(tag.lowercase())
             val bg = holder.itemView.context.getDrawable(R.drawable.sketch_tag)!!.mutate()
             val color = colorForTag(tag)
-            DrawableCompat.setTint(bg, color)
+            val finalColor = if (isSelected) darken(color, 0.12f) else color
+            DrawableCompat.setTint(bg, finalColor)
+
             val chip = TextView(holder.itemView.context).apply {
                 text = tag
                 textSize = 13f
-                setTextColor(if (isDark(color)) Color.WHITE else 0xFF111827.toInt())
+                setTextColor(0xFF111827.toInt())
                 background = bg
                 setPadding(12, 6, 12, 6)
                 typeface = ResourcesCompat.getFont(context, R.font.architects_daughter_regular)
@@ -107,8 +102,8 @@ class RecipeAdapter(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    rightMargin = 10 // espace horizontal
-                    bottomMargin = 8 // espace vertical si ça wrap sur 2 lignes
+                    rightMargin = 10
+                    bottomMargin = 8
                 }
             }
 

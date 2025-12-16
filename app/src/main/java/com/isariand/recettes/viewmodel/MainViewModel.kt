@@ -1,14 +1,10 @@
 package com.isariand.recettes.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.*
 import kotlinx.coroutines.launch
 import com.isariand.recettes.data.VideoData
 import com.isariand.recettes.repository.VideoRepository
 import com.isariand.recettes.data.RecipeEntity
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.flatMapLatest
 
 
 class MainViewModel(private val repository: VideoRepository) : ViewModel() {
@@ -27,7 +23,7 @@ class MainViewModel(private val repository: VideoRepository) : ViewModel() {
     }
     fun loadVideoDetails(link: String) {
         viewModelScope.launch {
-            _errorMessage.value = null // Vider l'erreur
+            _errorMessage.value = null
 
             val result = repository.fetchVideoDetails(link)
 
@@ -62,7 +58,7 @@ class MainViewModel(private val repository: VideoRepository) : ViewModel() {
             analysisResult.onSuccess { geminiRecipe ->
                 viewModelScope.launch {
                     repository.saveRecipe(originalLink, tikwmData, geminiRecipe)
-                    _errorMessage.postValue("Recette analysée et sauvegardée ✅")
+                    _errorMessage.postValue("Recette analysée et sauvegardée")
                 }
             }.onFailure { e ->
                 _errorMessage.postValue("Erreur analyse recette : ${e.message}")

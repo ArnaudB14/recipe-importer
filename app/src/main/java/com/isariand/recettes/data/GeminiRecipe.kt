@@ -1,6 +1,5 @@
 package com.isariand.recettes.data
 
-// Objet macros inchangé
 data class GeminiMacros(
     val kcal: String = "",
     val p: String = "",
@@ -8,7 +7,6 @@ data class GeminiMacros(
     val l: String = ""
 )
 
-// ✅ Modèle "raw" : accepte String OU Array pour ingredients/instructions
 data class GeminiRecipeRaw(
     val title: String = "",
     val description: String = "",
@@ -19,7 +17,6 @@ data class GeminiRecipeRaw(
     val macros: GeminiMacros = GeminiMacros()
 )
 
-// ✅ Modèle normalisé : celui que tu utilises dans l'app (String partout)
 data class GeminiRecipe(
     val title: String = "",
     val description: String = "",

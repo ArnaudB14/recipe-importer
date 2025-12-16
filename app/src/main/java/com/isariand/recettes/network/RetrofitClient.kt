@@ -9,7 +9,6 @@ object RetrofitClient {
 
     private const val BASE_URL = "https://www.tikwm.com"
 
-    // Configure le logger pour voir les requêtes dans Logcat
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
@@ -26,7 +25,6 @@ object RetrofitClient {
             .build()
     }
 
-    // Le service que nous allons utiliser dans la suite du code
     val apiService: TikwmApiService by lazy {
         retrofit.create(TikwmApiService::class.java)
     }
