@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.isariand.recettes.data.RecipeDao
+import com.isariand.recettes.data.RecipeEntity
 import com.isariand.recettes.repository.VideoRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,6 +28,16 @@ class FridgeScanViewModel(
 
     private val _toast = MutableLiveData("")
     val toast: LiveData<String> = _toast
+
+    data class MatchUi(
+        val id: Long,
+        val title: String,
+        val scorePercent: Int
+    )
+
+    private val _matches = MutableLiveData<List<RecipeEntity>>(emptyList())
+    val matches: LiveData<List<RecipeEntity>> = _matches
+
 
     fun analyze(bitmap: Bitmap) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -51,16 +62,13 @@ class FridgeScanViewModel(
                 return@launch
             }
 
-            val fridgeSet = items.map { normalize(it) }.toSet()
+            val matches = repository.findRecipesByFridgeIngredients(items, threshold = 0.5)
+            _matchingRecipesCount.postValue(matches.size)
+            _matches.postValue(matches.map { it.recipe })
 
-            val all = recipeDao.getAllRecipesOnce()
-            val matches = all.count { recipe ->
-                recipeMatchesAll(fridgeSet, recipe.ingredients)
-            }
-
-            _matchingRecipesCount.postValue(matches)
         }
     }
+
 
     private fun normalize(s: String): String {
         val lower = s.trim().lowercase()
@@ -80,12 +88,15 @@ class FridgeScanViewModel(
             .toSet()
     }
 
-    private fun recipeMatchesAll(fridge: Set<String>, ingredientsText: String): Boolean {
+    private fun recipeMatchScore(fridge: Set<String>, ingredientsText: String): Double {
         val recipeIngs = extractIngredients(ingredientsText)
-        if (recipeIngs.isEmpty()) return false
+        if (recipeIngs.isEmpty()) return 0.0
 
-        return recipeIngs.all { ing ->
+        val matched = recipeIngs.count { ing ->
             fridge.any { f -> ing.contains(f) || f.contains(ing) }
         }
+
+        return matched.toDouble() / recipeIngs.size.toDouble()
     }
+
 }

@@ -1,7 +1,6 @@
 package com.isariand.recettes.repository
 
 import android.util.Log
-import com.google.ai.client.generativeai.GenerativeModel
 import com.google.gson.Gson
 import com.isariand.recettes.data.GeminiRecipe
 import com.isariand.recettes.data.GeminiRecipeRaw
@@ -13,17 +12,23 @@ import kotlinx.coroutines.flow.Flow
 import android.graphics.Bitmap
 import com.google.ai.client.generativeai.type.content
 import com.isariand.recettes.data.GeminiFridgeRaw
+import com.isariand.recettes.network.GroqApiService
+import com.isariand.recettes.network.OpenAiInputMessage
+import com.isariand.recettes.network.OpenAiResponseRequest
+import com.isariand.recettes.network.OpenAiTextConfig
+import com.isariand.recettes.network.OpenAiTextFormat
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class VideoRepository(
     private val apiService: TikwmApiService,
     private val recipeDao: RecipeDao,
-    geminiApiKey: String
+    private val groq: GroqApiService
 ) {
 
-    private val geminiModel = GenerativeModel(
-        modelName = "gemini-2.5-flash",
-        apiKey = geminiApiKey
-    )
 
     private val gson = Gson()
 
@@ -40,9 +45,8 @@ class VideoRepository(
         }
     }
 
-
     suspend fun analyzeTextAndGetRecipe(recipeText: String): Result<GeminiRecipe> {
-        val tag = "GeminiText"
+        val tag = "GroqText"
 
         return try {
             val prompt = """
@@ -52,22 +56,15 @@ Voici le texte brut d'une recette issue de TikTok :
 
 "$recipeText"
 
-Ta tâche :
-- Structurer cette recette proprement
-- Déduire les ingrédients et quantités
-- Déduire les étapes de préparation
-- Estimer les macros si possible
-
 ⚠️ RÈGLES STRICTES :
 - Réponds UNIQUEMENT avec un JSON valide
 - AUCUN texte hors JSON
 - Si une info est absente, mets une chaîne vide ""
-- Si il n'y a pas d'instructions, invente les en te basant sur le titre de la recette et les ingrédients.
-- Si c'est en anglais, traduis le en français.
-- Estime les calories ainsi que les macros si possible.
+- Si il n'y a pas d'instructions, invente-les de façon plausible.
+- Si c'est en anglais, traduis en français.
+- Estime les calories et macros si possible.
 - N'ajoute PAS les macros dans la description.
-- Ne numérote pas ls instructions, il y en a déjà d'ajouté automatiquement mais mets les quand même en liste.
-- N'ajoute pas de tiret dans la liste des ingrédients, il y en déjà d'ajouté automatiquement mais mets les quand même en liste.
+- Ingrédients et instructions doivent être des chaînes multi-lignes (1 item par ligne), sans tirets.
 
 FORMAT JSON OBLIGATOIRE :
 {
@@ -79,51 +76,39 @@ FORMAT JSON OBLIGATOIRE :
   "portions": "",
   "macros": { "kcal":"", "p":"", "g":"", "l":"" }
 }
-
-- kcal ex "450"
-- p/g/l en grammes ex "32"
-- si inconnu => ""
-
-- portions ex "2" ou "4"
-- Essaye d'estimer, et si tu n'y arrives pas => ""
-
 """.trimIndent()
 
-            Log.d(tag, "Sending TEXT to Gemini")
-            Log.d(tag, recipeText)
+            Log.d(tag, "Calling Groq recipe analysis")
 
-            val response = retryGemini {
-                geminiModel.generateContent(prompt)
-            }
+            val body = """
+{
+  "model": "llama-3.1-8b-instant",
+  "temperature": 0.2,
+  "response_format": { "type": "json_object" },
+  "messages": [
+    { "role": "user", "content": ${gson.toJson(prompt)} }
+  ]
+}
+""".trimIndent()
 
-            val raw = response.text
-            Log.d(tag, "RAW RESPONSE:\n$raw")
+            val resp = groq.chatCompletions(jsonBody(body))
+            val raw = resp.choices.firstOrNull()?.message?.content.orEmpty().trim()
 
-            if (raw.isNullOrBlank()) {
-                return Result.failure(Exception("Réponse Gemini vide"))
-            }
+            if (raw.isBlank()) return Result.failure(Exception("Réponse Groq vide"))
 
-            val cleanedJson = raw
-                .replace("```json", "")
-                .replace("```", "")
-                .trim()
-
-            Log.d(tag, "CLEANED JSON:\n$cleanedJson")
-
-            val rawRecipe = gson.fromJson(cleanedJson, GeminiRecipeRaw::class.java)
+            val parsed = gson.fromJson(raw, GeminiRecipeRaw::class.java)
 
             val recipe = GeminiRecipe(
-                title = rawRecipe.title,
-                description = rawRecipe.description,
-                ingredients = anyToMultilineString(rawRecipe.ingredients),
-                instructions = anyToMultilineString(rawRecipe.instructions),
-                cookingTime = rawRecipe.cookingTime,
-                macros = rawRecipe.macros,
-                portions = rawRecipe.portions.trim(),
+                title = parsed.title,
+                description = parsed.description,
+                ingredients = anyToMultilineString(parsed.ingredients),
+                instructions = anyToMultilineString(parsed.instructions),
+                cookingTime = parsed.cookingTime,
+                macros = parsed.macros,
+                portions = parsed.portions.trim(),
             )
 
             Result.success(recipe)
-
 
         } catch (e: Exception) {
             Log.e(tag, "Analyze text error: ${e.message}", e)
@@ -131,11 +116,18 @@ FORMAT JSON OBLIGATOIRE :
         }
     }
 
+
+    private fun bitmapToJpegDataUrl(bitmap: Bitmap): String {
+        val baos = java.io.ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos)
+        val b64 = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP)
+        return "data:image/jpeg;base64,$b64"
+    }
+
     suspend fun analyzeFridgeImage(bitmap: Bitmap): Result<List<String>> {
-        val tag = "GeminiFridge"
+        val tag = "GroqFridge"
 
         return try {
-            // Prompt: JSON strict, liste courte, items normalisés
             val prompt = """
 Tu analyses une photo d'un frigo ou d'un plan de travail et tu listes les ingrédients visibles.
 
@@ -143,30 +135,37 @@ RÈGLES STRICTES :
 - Réponds UNIQUEMENT avec un JSON valide
 - AUCUN texte hors JSON
 - Liste max 25 éléments
-- Mets des noms courts en français (ex: "oeufs", "lait", "tomates", "poulet", "fromage")
+- Noms courts en français (ex: "oeufs", "lait", "tomates", "poulet", "fromage")
 - Si tu doutes, n'invente pas
 
 FORMAT JSON OBLIGATOIRE :
 { "items": ["", "", ""] }
 """.trimIndent()
 
-            // Appel multimodal (image + texte)
-            val input = content {
-                image(bitmap)
-                text(prompt)
-            }
+            val dataUrl = bitmapToJpegDataUrl(bitmap)
 
-            val response = geminiModel.generateContent(input)
+            val body = """
+{
+  "model": "llama-3.2-11b-vision-preview",
+  "temperature": 0.2,
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "text", "text": ${gson.toJson(prompt)} },
+        { "type": "image_url", "image_url": { "url": ${gson.toJson(dataUrl)} } }
+      ]
+    }
+  ]
+}
+""".trimIndent()
 
-            val raw = response.text.orEmpty().trim()
-            if (raw.isBlank()) return Result.failure(Exception("Réponse Gemini vide"))
+            val resp = groq.chatCompletions(jsonBody(body))
+            val raw = resp.choices.firstOrNull()?.message?.content.orEmpty().trim()
 
-            val cleaned = raw
-                .replace("```json", "", ignoreCase = true)
-                .replace("```", "")
-                .trim()
+            if (raw.isBlank()) return Result.failure(Exception("Réponse Groq vide"))
 
-            val parsed = gson.fromJson(cleaned, GeminiFridgeRaw::class.java)
+            val parsed = gson.fromJson(raw, GeminiFridgeRaw::class.java)
 
             val items = parsed.items
                 .map { it.trim() }
@@ -175,11 +174,24 @@ FORMAT JSON OBLIGATOIRE :
                 .take(25)
 
             Result.success(items)
+
         } catch (e: Exception) {
             Log.e(tag, "analyzeFridgeImage error: ${e.message}", e)
             Result.failure(e)
         }
     }
+
+    private fun cleanMacroValue(s: String?): String {
+        if (s.isNullOrBlank()) return ""
+        // garde chiffres + . + ,
+        val num = s.trim()
+            .replace(",", ".")
+            .replace(Regex("""[^0-9.]"""), "")
+            .trim()
+        // évite "": si rien de récupéré
+        return num
+    }
+
 
     suspend fun saveRecipe(
         videoUrl: String,
@@ -190,10 +202,11 @@ FORMAT JSON OBLIGATOIRE :
             return // déjà importée => pas d'appel Gemini
         }
 
-        val kcal = geminiRecipe.macros?.kcal.orEmpty()
-        val protein = geminiRecipe.macros?.p.orEmpty()
-        val carbs = geminiRecipe.macros?.g.orEmpty()
-        val fat = geminiRecipe.macros?.l.orEmpty()
+        val protein = cleanMacroValue(geminiRecipe.macros?.p)
+        val carbs = cleanMacroValue(geminiRecipe.macros?.g)
+        val fat = cleanMacroValue(geminiRecipe.macros?.l)
+        val kcal = cleanMacroValue(geminiRecipe.macros?.kcal)
+
 
         val macrosText = listOfNotNull(
             kcal.takeIf { it.isNotBlank() }?.let { "${it} kcal" },
@@ -292,32 +305,76 @@ FORMAT JSON OBLIGATOIRE :
         }
     }
 
-    private suspend fun <T> retryGemini(
-        times: Int = 3,
-        initialDelayMs: Long = 500,
-        factor: Double = 2.0,
-        block: suspend () -> T
-    ): T {
-        var delayMs = initialDelayMs
-        var last: Exception? = null
+    data class RecipeMatch(
+        val recipe: RecipeEntity,
+        val score: Double,
+        val matchedCount: Int,
+        val totalCount: Int
+    )
 
-        repeat(times) { attempt ->
-            try {
-                return block()
-            } catch (e: Exception) {
-                last = e
-                val msg = e.message.orEmpty()
-                val overloaded = msg.contains("overloaded", ignoreCase = true) ||
-                        msg.contains("\"code\": 503") ||
-                        msg.contains("UNAVAILABLE", ignoreCase = true)
-
-                if (!overloaded || attempt == times - 1) throw e
-
-                kotlinx.coroutines.delay(delayMs)
-                delayMs = (delayMs * factor).toLong()
-            }
-        }
-        throw last ?: RuntimeException("Gemini retry failed")
+    private fun normalizeIngredient(s: String): String {
+        return s.lowercase()
+            .replace(Regex("""\([^)]*\)"""), " ") // enlève (facultatif)
+            .replace(Regex("""\d+[.,]?\d*\s*(g|kg|ml|l|c\.|c|cs|cc|sachet|pincée|tbsp|tsp)?"""), " ")
+            .replace(Regex("""[^\p{L}\s]"""), " ")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
     }
+
+    private fun parseRecipeIngredients(raw: String): Set<String> {
+        return raw.split("\n")
+            .map { it.trim().removePrefix("-").trim() }
+            .filter { it.isNotBlank() }
+            .map { normalizeIngredient(it) }
+            .filter { it.isNotBlank() }
+            .toSet()
+    }
+
+    private fun ingredientMatches(recipeIng: String, fridgeSet: Set<String>): Boolean {
+        // exact
+        if (recipeIng in fridgeSet) return true
+        // contient / inclus (oignon vs oignon jaune)
+        return fridgeSet.any { f -> f.contains(recipeIng) || recipeIng.contains(f) }
+    }
+
+    suspend fun findRecipesByFridgeIngredients(
+        fridgeIngredients: List<String>,
+        threshold: Double = 0.5
+    ): List<RecipeMatch> {
+
+        val allRecipes = recipeDao.getAllRecipesOnce()
+
+        val fridgeSet = fridgeIngredients
+            .map { normalizeIngredient(it) }
+            .filter { it.isNotBlank() }
+            .toSet()
+
+        if (fridgeSet.isEmpty()) return emptyList()
+
+        return allRecipes.mapNotNull { r ->
+            val recipeSet = parseRecipeIngredients(r.ingredients)
+            if (recipeSet.isEmpty()) return@mapNotNull null
+
+            val matchedCount = recipeSet.count { ing -> ingredientMatches(ing, fridgeSet) }
+            val score = matchedCount.toDouble() / recipeSet.size.toDouble()
+
+            if (score >= threshold) {
+                RecipeMatch(
+                    recipe = r,
+                    score = score,
+                    matchedCount = matchedCount,
+                    totalCount = recipeSet.size
+                )
+            } else null
+        }.sortedByDescending { it.score }
+    }
+
+    suspend fun getAllRecipesOnce(): List<RecipeEntity> {
+        return recipeDao.getAllRecipesOnce()
+    }
+
+    private fun jsonBody(s: String) =
+        s.toRequestBody("application/json; charset=utf-8".toMediaType())
+
 
 }

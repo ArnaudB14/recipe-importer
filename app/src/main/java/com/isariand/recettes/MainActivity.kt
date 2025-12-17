@@ -9,6 +9,9 @@ import com.isariand.recettes.repository.VideoRepository
 import com.isariand.recettes.network.RetrofitClient
 import com.isariand.recettes.viewmodel.MainViewModel
 import android.content.Intent
+import android.view.View
+import android.widget.ImageView
+import android.widget.TextView
 import com.isariand.recettes.data.AppDatabase
 import com.isariand.recettes.ui.RecipeListFragment
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -18,8 +21,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import com.isariand.recettes.BuildConfig
+import com.isariand.recettes.network.GroqClient
 
 class MainActivity : FragmentActivity() {
+
+    private var lastSharedText: String? = null
+    private var lastSharedAt: Long = 0L
 
     private val viewModel: MainViewModel by viewModels {
         object : ViewModelProvider.Factory {
@@ -27,7 +34,7 @@ class MainActivity : FragmentActivity() {
 
                 val apiService = RetrofitClient.apiService
                 val recipeDao = AppDatabase.getDatabase(applicationContext).recipeDao()
-                val repository = VideoRepository(apiService, recipeDao, geminiApiKey = BuildConfig.GEMINI_API_KEY)
+                val repository = VideoRepository(apiService, recipeDao, groq = GroqClient.api)
 
                 @Suppress("UNCHECKED_CAST")
                 return MainViewModel(repository) as T
@@ -56,6 +63,49 @@ class MainActivity : FragmentActivity() {
         setContentView(R.layout.activity_main)
 
         val content = findViewById<android.view.View>(R.id.fragment_container)
+        val overlay = findViewById<View>(R.id.importOverlay)
+        val spinner = findViewById<View>(R.id.importSpinner)
+        val icon = findViewById<ImageView>(R.id.importResultIcon)
+        val text = findViewById<TextView>(R.id.importText)
+
+        viewModel.importState.observe(this) { state ->
+            when (state) {
+                is MainViewModel.ImportState.Idle -> {
+                    overlay.visibility = View.GONE
+                }
+
+                is MainViewModel.ImportState.Loading -> {
+                    overlay.visibility = View.VISIBLE
+                    spinner.visibility = View.VISIBLE
+                    icon.visibility = View.GONE
+                    text.text = state.message
+                }
+
+                is MainViewModel.ImportState.Success -> {
+                    overlay.visibility = View.VISIBLE
+                    spinner.visibility = View.GONE
+                    icon.visibility = View.VISIBLE
+                    icon.setImageResource(R.drawable.ic_check_sketch)
+                    text.text = state.message
+
+                    overlay.postDelayed({
+                        overlay.visibility = View.GONE
+                    }, 1200)
+                }
+
+                is MainViewModel.ImportState.Error -> {
+                    overlay.visibility = View.VISIBLE
+                    spinner.visibility = View.GONE
+                    icon.visibility = View.VISIBLE
+                    icon.setImageResource(R.drawable.ic_close_sketch)
+                    text.text = state.message
+
+                    overlay.postDelayed({
+                        overlay.visibility = View.GONE
+                    }, 1800)
+                }
+            }
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(content) { v, insets ->
             val sysBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -86,30 +136,21 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun handleSharedIntent(intent: Intent) {
-        val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
-        if (!sharedText.isNullOrEmpty()) {
-            Toast.makeText(this, "Récupération des détails vidéo...", Toast.LENGTH_LONG).show()
-            viewModel.loadVideoDetails(sharedText)
-            viewModel.videoData.observe(this) { data ->
-                if (data != null && data.title?.isNotEmpty() == true) {
-                    viewModel.saveLastFetchedVideo(sharedText)
-                    Toast.makeText(this, "Recette chargée et sauvegardée!", Toast.LENGTH_LONG).show()
-                    navigateToRecipeList()
-                    viewModel.videoData.removeObservers(this)
-                }
-            }
-
-            viewModel.errorMessage.observe(this) { message ->
-                if (message != null) {
-                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-                    navigateToRecipeList()
-                    viewModel.errorMessage.removeObservers(this)
-                }
-            }
-        } else {
+        val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty().trim()
+        val now = System.currentTimeMillis()
+        if (sharedText == lastSharedText && (now - lastSharedAt) < 2000) {
             navigateToRecipeList()
+            return
         }
+        lastSharedText = sharedText
+        lastSharedAt = now
+
+
+        viewModel.importFromTiktok(sharedText)
+
+        navigateToRecipeList()
     }
+
 
     private fun navigateToRecipeList() {
         supportFragmentManager.beginTransaction()

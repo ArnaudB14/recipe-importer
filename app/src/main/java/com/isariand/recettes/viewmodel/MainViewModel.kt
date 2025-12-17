@@ -18,6 +18,16 @@ class MainViewModel(private val repository: VideoRepository) : ViewModel() {
     private val _selectedTags = androidx.lifecycle.MutableLiveData<Set<String>>(emptySet())
     val selectedTags: androidx.lifecycle.LiveData<Set<String>> = _selectedTags
 
+    sealed class ImportState {
+        object Idle : ImportState()
+        data class Loading(val message: String = "Import en cours…") : ImportState()
+        data class Success(val message: String = "Recette importée !") : ImportState()
+        data class Error(val message: String = "Erreur d’import") : ImportState()
+    }
+
+    private val _importState = MutableLiveData<ImportState>(ImportState.Idle)
+    val importState: LiveData<ImportState> = _importState
+
     fun setSearchQuery(query: String) {
         searchQuery.value = query
     }
@@ -36,32 +46,40 @@ class MainViewModel(private val repository: VideoRepository) : ViewModel() {
         }
     }
 
-    fun saveLastFetchedVideo(originalLink: String) {
+    fun importFromTiktok(sharedText: String) {
         viewModelScope.launch {
-            val tikwmData = videoData.value
+            // évite les doubles imports si on reçoit 2 intents
+            if (_importState.value is ImportState.Loading) return@launch
 
-            if (tikwmData == null) {
-                _errorMessage.postValue("Aucune donnée vidéo à sauvegarder.")
-                return@launch
-            }
+            _importState.value = ImportState.Loading("Récupération de la vidéo…")
 
-            val text = tikwmData.title
-            if (text.isNullOrBlank()) {
-                _errorMessage.postValue("Aucun texte de recette disponible.")
-                return@launch
-            }
+            val fetch = repository.fetchVideoDetails(sharedText)
+            fetch.onSuccess { data ->
+                _videoData.value = data
 
-            _errorMessage.postValue("Analyse de la recette en cours...")
-
-            val analysisResult = repository.analyzeTextAndGetRecipe(text)
-
-            analysisResult.onSuccess { geminiRecipe ->
-                viewModelScope.launch {
-                    repository.saveRecipe(originalLink, tikwmData, geminiRecipe)
-                    _errorMessage.postValue("Recette analysée et sauvegardée")
+                val text = data.title
+                if (text.isNullOrBlank()) {
+                    _importState.value = ImportState.Error("Aucun texte de recette trouvé.")
+                    return@launch
                 }
+
+                _importState.value = ImportState.Loading("Analyse de la recette…")
+
+                try {
+                    val analysis = repository.analyzeTextAndGetRecipe(text)
+                    analysis.onSuccess { geminiRecipe ->
+                        repository.saveRecipe(sharedText, data, geminiRecipe)
+                        _importState.value = ImportState.Success("Recette importée !")
+                    }.onFailure {
+                        _importState.value = ImportState.Error("Analyse impossible (quota API)")
+                    }
+                } catch (e: retrofit2.HttpException) {
+                    _importState.value = ImportState.Error("Quota API OpenAI non actif")
+                }
+
+
             }.onFailure { e ->
-                _errorMessage.postValue("Erreur analyse recette : ${e.message}")
+                _importState.value = ImportState.Error(e.message ?: "Erreur TikWM")
             }
         }
     }
@@ -148,3 +166,4 @@ class MainViewModel(private val repository: VideoRepository) : ViewModel() {
         addSource(_showFavoritesOnly) { apply() }
     }
 }
+

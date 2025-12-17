@@ -26,6 +26,7 @@ import java.lang.IllegalArgumentException
 import com.isariand.recettes.BuildConfig
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import com.isariand.recettes.network.GroqClient
 
 class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
 
@@ -37,7 +38,7 @@ class RecipeDetailFragment : Fragment(R.layout.fragment_recipe_detail) {
     private val viewModel: RecipeDetailViewModel by viewModels {
         val apiService = RetrofitClient.apiService
         val recipeDao = AppDatabase.getDatabase(requireContext()).recipeDao()
-        val repository = VideoRepository(apiService, recipeDao, geminiApiKey = BuildConfig.GEMINI_API_KEY)
+        val repository = VideoRepository(apiService, recipeDao, groq = GroqClient.api)
         RecipeDetailViewModelFactory(repository, recipeId)
     }
 
