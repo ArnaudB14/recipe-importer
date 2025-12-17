@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModel
@@ -75,12 +76,23 @@ class FridgeScanFragment : Fragment(R.layout.fragment_fridge_scan) {
         viewModel.loading.observe(viewLifecycleOwner) { loading ->
             binding.progress.visibility = if (loading) View.VISIBLE else View.GONE
             binding.takePhotoButton.isEnabled = !loading
-            binding.findRecipesButton.isEnabled = !loading
         }
 
         viewModel.detectedItems.observe(viewLifecycleOwner) { items ->
-            binding.itemsContainer.text = items.joinToString(", ")
+            binding.itemsContainer.setText(
+                if (items.isEmpty()) "(aucun)" else items.joinToString("\n")
+            )
         }
+
+        binding.itemsContainer.addTextChangedListener {
+            val items = binding.itemsContainer.text.toString()
+                .split("\n", ",", ";")
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+
+            viewModel.findMatchingRecipes(items)
+        }
+
 
         viewModel.matchingRecipesCount.observe(viewLifecycleOwner) { count ->
             binding.resultsInfo.text = "Recettes trouvées : $count"
@@ -93,10 +105,6 @@ class FridgeScanFragment : Fragment(R.layout.fragment_fridge_scan) {
 
         viewModel.toast.observe(viewLifecycleOwner) { msg ->
             if (msg.isNotBlank()) Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
-        }
-
-        binding.findRecipesButton.setOnClickListener {
-            viewModel.findMatchingRecipes()
         }
     }
 

@@ -17,6 +17,8 @@ class MainViewModel(private val repository: VideoRepository) : ViewModel() {
     private val searchQuery = MutableLiveData<String>("")
     private val _selectedTags = androidx.lifecycle.MutableLiveData<Set<String>>(emptySet())
     val selectedTags: androidx.lifecycle.LiveData<Set<String>> = _selectedTags
+    private val _fridgeMatches = MutableLiveData<List<VideoRepository.RecipeMatch>>(emptyList())
+    val fridgeMatches: LiveData<List<VideoRepository.RecipeMatch>> = _fridgeMatches
 
     sealed class ImportState {
         object Idle : ImportState()

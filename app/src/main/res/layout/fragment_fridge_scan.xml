@@ -48,7 +48,7 @@
             android:fontFamily="@font/architects_daughter_regular"
             android:textStyle="bold" />
 
-        <TextView
+        <EditText
             android:id="@+id/itemsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -57,20 +57,12 @@
             android:textColor="@color/sk_text"
             android:textColorHint="@color/sk_text_muted"
             android:padding="12dp"
-            android:text="(aucun)"
-            android:minHeight="60dp" />
+            android:minHeight="60dp"
+            android:hint="ex: oeufs, lait, tomates"
+            android:inputType="textMultiLine"
+            android:gravity="top"
+            android:fontFamily="@font/architects_daughter_regular" />
 
-        <Button
-            android:id="@+id/findRecipesButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:textAllCaps="false"
-            android:textStyle="bold"
-            android:fontFamily="@font/architects_daughter_regular"
-            android:backgroundTint="@color/sk_text"
-            android:textColor="@color/sk_paper"
-            android:text="Trouver des recettes" />
 
         <TextView
             android:id="@+id/resultsInfo"
@@ -85,10 +77,10 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/matchesRecycler"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            app:layout_constraintTop_toBottomOf="@id/resultsInfo"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            android:nestedScrollingEnabled="false"
+            />
 
 
     </LinearLayout>

@@ -22,6 +22,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.text.Normalizer
 
 class VideoRepository(
     private val apiService: TikwmApiService,
@@ -136,7 +137,7 @@ RÈGLES STRICTES :
 - AUCUN texte hors JSON
 - Liste max 25 éléments
 - Noms courts en français (ex: "oeufs", "lait", "tomates", "poulet", "fromage")
-- Si tu doutes, n'invente pas
+- Si tu doutes, n'invente pas, sois le plus précis possible.
 
 FORMAT JSON OBLIGATOIRE :
 { "items": ["", "", ""] }
@@ -146,7 +147,7 @@ FORMAT JSON OBLIGATOIRE :
 
             val body = """
 {
-  "model": "llama-3.2-11b-vision-preview",
+  "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
   "temperature": 0.2,
   "messages": [
     {
@@ -159,6 +160,7 @@ FORMAT JSON OBLIGATOIRE :
   ]
 }
 """.trimIndent()
+
 
             val resp = groq.chatCompletions(jsonBody(body))
             val raw = resp.choices.firstOrNull()?.message?.content.orEmpty().trim()
@@ -175,10 +177,15 @@ FORMAT JSON OBLIGATOIRE :
 
             Result.success(items)
 
+        } catch (e: retrofit2.HttpException) {
+            val err = e.response()?.errorBody()?.string()
+            Log.e(tag, "HTTP ${e.code()} errorBody=$err")
+            return Result.failure(e)
         } catch (e: Exception) {
             Log.e(tag, "analyzeFridgeImage error: ${e.message}", e)
-            Result.failure(e)
+            return Result.failure(e)
         }
+
     }
 
     private fun cleanMacroValue(s: String?): String {
@@ -313,29 +320,42 @@ FORMAT JSON OBLIGATOIRE :
     )
 
     private fun normalizeIngredient(s: String): String {
-        return s.lowercase()
-            .replace(Regex("""\([^)]*\)"""), " ") // enlève (facultatif)
-            .replace(Regex("""\d+[.,]?\d*\s*(g|kg|ml|l|c\.|c|cs|cc|sachet|pincée|tbsp|tsp)?"""), " ")
+        val noAccents = Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD)
+            .replace(Regex("\\p{Mn}+"), "") // enlève accents
+            .replace("œ", "oe")
+        return noAccents
+            .replace(Regex("""\([^)]*\)"""), " ")
+            .replace(Regex("""\d+[.,]?\d*\s*(g|kg|ml|l|c\.|c|cs|cc|sachet|pincee|tbsp|tsp)?"""), " ")
             .replace(Regex("""[^\p{L}\s]"""), " ")
             .replace(Regex("""\s+"""), " ")
             .trim()
     }
 
+
     private fun parseRecipeIngredients(raw: String): Set<String> {
         return raw.split("\n")
-            .map { it.trim().removePrefix("-").trim() }
+            .map { it.trim() }
             .filter { it.isNotBlank() }
+            .filterNot { isOptionalIngredientLine(it) }
+            .map { it.removePrefix("-").trim() }
             .map { normalizeIngredient(it) }
             .filter { it.isNotBlank() }
+            .filterNot { it in pantry }
             .toSet()
     }
 
+
     private fun ingredientMatches(recipeIng: String, fridgeSet: Set<String>): Boolean {
-        // exact
-        if (recipeIng in fridgeSet) return true
-        // contient / inclus (oignon vs oignon jaune)
-        return fridgeSet.any { f -> f.contains(recipeIng) || recipeIng.contains(f) }
+        val rTokens = tokens(recipeIng)
+        if (rTokens.isEmpty()) return false
+
+        // on compare aux tokens de chaque item frigo
+        return fridgeSet.any { f ->
+            val fTokens = tokens(f)
+            rTokens.any { it in fTokens } || fTokens.any { it in rTokens }
+        }
     }
+
 
     suspend fun findRecipesByFridgeIngredients(
         fridgeIngredients: List<String>,
@@ -376,5 +396,38 @@ FORMAT JSON OBLIGATOIRE :
     private fun jsonBody(s: String) =
         s.toRequestBody("application/json; charset=utf-8".toMediaType())
 
+    private val pantry = setOf(
+        "sel", "poivre", "huile", "huile d olive", "huile d'olive",
+        "origan", "herbes", "épices", "epices", "eau", "beurre"
+    )
+
+    private val stopWords = setOf(
+        "de","d","du","des","la","le","les","un","une",
+        "bien","mure","mûre","petit","petite","gros","grosse"
+    )
+
+    private fun isPantry(ing: String): Boolean {
+        val n = normalizeIngredient(ing)
+        return pantry.contains(n)
+    }
+
+    private fun tokens(s: String): Set<String> {
+        val n = normalizeIngredient(s)
+        return n.split(" ")
+            .map { it.trim() }
+            .filter { it.length >= 3 }
+            .filterNot { it in stopWords }
+            .map { it.removeSuffix("s") } // mini-singularisation
+            .toSet()
+    }
+
+    private fun isOptionalIngredientLine(line: String): Boolean {
+        val n = line.lowercase()
+        return n.contains("facultatif") ||
+                n.contains("optionnel") ||
+                n.contains("optional") ||
+                n.contains("(facultatif)") ||
+                n.contains("(optionnel)")
+    }
 
 }

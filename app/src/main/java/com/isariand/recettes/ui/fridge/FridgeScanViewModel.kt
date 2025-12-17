@@ -45,7 +45,12 @@ class FridgeScanViewModel(
 
             val res = repository.analyzeFridgeImage(bitmap)
             if (res.isSuccess) {
-                _detectedItems.postValue(res.getOrNull().orEmpty())
+                val items = res.getOrNull().orEmpty()
+                _detectedItems.postValue(items)
+
+                // ✅ auto-find
+                findMatchingRecipes(items)
+
             } else {
                 _toast.postValue("Analyse frigo impossible : ${res.exceptionOrNull()?.message}")
             }
@@ -54,20 +59,21 @@ class FridgeScanViewModel(
         }
     }
 
-    fun findMatchingRecipes() {
+    fun findMatchingRecipes(items: List<String>) {
         viewModelScope.launch(Dispatchers.IO) {
-            val items = _detectedItems.value.orEmpty()
             if (items.isEmpty()) {
-                _toast.postValue("Aucun ingrédient détecté.")
+                _matchingRecipesCount.postValue(0)
+                _matches.postValue(emptyList())
                 return@launch
             }
 
-            val matches = repository.findRecipesByFridgeIngredients(items, threshold = 0.5)
+            val matches = repository.findRecipesByFridgeIngredients(items, threshold = 0.35)
             _matchingRecipesCount.postValue(matches.size)
             _matches.postValue(matches.map { it.recipe })
-
         }
     }
+
+
 
 
     private fun normalize(s: String): String {
